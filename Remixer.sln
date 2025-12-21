@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remixer.Core", "Remixer.Core\Remixer.Core.csproj", "{18A708DD-2A2E-4514-843A-5908462C02ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remixer.WPF", "Remixer.WPF\Remixer.WPF.csproj", "{B9C86961-A40F-4C81-8189-C6C33E1EB860}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{18A708DD-2A2E-4514-843A-5908462C02ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18A708DD-2A2E-4514-843A-5908462C02ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18A708DD-2A2E-4514-843A-5908462C02ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18A708DD-2A2E-4514-843A-5908462C02ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9C86961-A40F-4C81-8189-C6C33E1EB860}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9C86961-A40F-4C81-8189-C6C33E1EB860}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9C86961-A40F-4C81-8189-C6C33E1EB860}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9C86961-A40F-4C81-8189-C6C33E1EB860}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

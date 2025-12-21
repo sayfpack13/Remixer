@@ -1,0 +1,6 @@
+{
+  "AIEndpoint": "https://your-app.ondigitalocean.app/v1/chat/completions",
+  "AIKey": "your-api-key-here",
+  "AIModel": "gpt-4"
+}
+
