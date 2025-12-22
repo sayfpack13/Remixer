@@ -33,8 +33,7 @@ A Windows desktop application built with .NET and WPF that enables users to remi
      ```json
      {
        "AIEndpoint": "https://api.openai.com/v1/chat/completions",
-       "AIKey": "your-api-key-here",
-       "AIModel": "gpt-4"
+       "AIKey": "your-api-key-here"
      }
      ```
 

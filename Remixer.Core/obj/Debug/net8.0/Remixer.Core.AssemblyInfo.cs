@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Remixer.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6914508a6e1fcb1bf7799b41fb03dec83b270238")]
 [assembly: System.Reflection.AssemblyProductAttribute("Remixer.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Remixer.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

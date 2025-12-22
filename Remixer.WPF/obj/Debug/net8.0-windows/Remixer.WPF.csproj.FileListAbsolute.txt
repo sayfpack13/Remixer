@@ -44,6 +44,7 @@ C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Rem
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer.WPF.AssemblyInfoInputs.cache
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer.WPF.AssemblyInfo.cs
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer.WPF.csproj.CoreCompileInputs.cache
+C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer.WPF.sourcelink.json
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer..31FD83FA.Up2Date
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\Remixer.WPF.dll
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.WPF\obj\Debug\net8.0-windows\refint\Remixer.WPF.dll

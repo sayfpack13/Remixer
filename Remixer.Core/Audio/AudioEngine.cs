@@ -78,8 +78,105 @@ public class AudioEngine : IDisposable
     {
         ProcessAudio(TimeSpan.Zero);
     }
-    
+
     public void ProcessAudio(TimeSpan preservePosition)
+    {
+        ProcessAudioInternal(preservePosition);
+    }
+
+    /// <summary>
+    /// Process audio and immediately start playback from the specified position percentage
+    /// </summary>
+    public void ProcessAudioAndPlay(double positionPercentage)
+    {
+        lock (_audioLock)
+        {
+            // Stop current playback if any
+            if (_wavePlayer != null && IsPlaying)
+            {
+                _wavePlayer.PlaybackStopped -= OnPlaybackStopped;
+                _wavePlayer.Stop();
+                _wavePlayer.Dispose();
+                _wavePlayer = null;
+                IsPlaying = false;
+                StopPositionTimer();
+            }
+
+            // Process audio (start from beginning, we'll skip in provider)
+            ProcessAudioInternal(TimeSpan.Zero);
+
+            // Calculate start position based on percentage
+            var newTotalTime = TotalTime;
+            var startPosition = TimeSpan.FromSeconds(positionPercentage * newTotalTime.TotalSeconds);
+
+            // Ensure we don't start too close to the end (leave at least 2 seconds)
+            var minEndDistance = TimeSpan.FromSeconds(2);
+            if (newTotalTime > minEndDistance && startPosition > newTotalTime - minEndDistance)
+            {
+                startPosition = newTotalTime - minEndDistance;
+            }
+
+            // For very short audio, just start from beginning
+            if (newTotalTime < TimeSpan.FromSeconds(5))
+            {
+                startPosition = TimeSpan.Zero;
+            }
+
+            // Set position for playback
+            CurrentTime = startPosition;
+            _playbackStartOffset = startPosition;
+            _initialPlaybackOffset = startPosition;
+
+            // Create and start playback
+            try
+            {
+                if (_processedProvider == null)
+                {
+                    throw new InvalidOperationException("Processed provider is null after processing");
+                }
+
+                if (_processedProvider.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
+                {
+                    throw new InvalidOperationException($"Processed provider must be in IEEE Float format, but got {_processedProvider.WaveFormat.Encoding}");
+                }
+
+                // Create skipped provider from desired start position
+                var startProvider = CreateSkippedProvider(_processedProvider, startPosition);
+
+                // Create new player
+                Logger.Debug("Creating new WaveOutEvent for ProcessAudioAndPlay");
+                _wavePlayer = new NAudio.Wave.WaveOutEvent();
+                _wavePlayer.PlaybackStopped += OnPlaybackStopped;
+
+                var waveProvider = new SampleToWaveProvider(startProvider);
+                Logger.Debug($"WaveProvider format: {waveProvider.WaveFormat}");
+
+                _wavePlayer.Init(waveProvider);
+                _wavePlayer.Play();
+
+                IsPlaying = true;
+
+                // Track playback start time and offset
+                _playbackStartTime = DateTime.Now - startPosition; // Adjust start time so position calculation works
+                _playbackStartOffset = startPosition;
+                _initialPlaybackOffset = startPosition;
+
+                OnPlaybackStateChanged(PlaybackState.Playing);
+                StartPositionTimer();
+
+                Logger.Info($"Audio playback started from position: {startPosition}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to start playback in ProcessAudioAndPlay", ex);
+                IsPlaying = false;
+                StopPositionTimer();
+                throw;
+            }
+        }
+    }
+
+    private void ProcessAudioInternal(TimeSpan preservePosition)
     {
         lock (_audioLock)
         {
@@ -90,10 +187,94 @@ public class AudioEngine : IDisposable
             }
             _isProcessing = true;
         }
-        
+
         try
         {
-            ProcessAudioInternal(preservePosition);
+            _processAudioCallCount++;
+            Logger.Info($"=== ProcessAudioInternal called (call #{_processAudioCallCount}) ===");
+            Logger.Debug($"preservePosition: {preservePosition}");
+
+            if (_currentStream == null)
+            {
+                Logger.Warning("Cannot process audio: _currentStream is null");
+                _processedProvider = null;
+                return;
+            }
+
+            Logger.Debug($"Stream state before processing: Length={_currentStream.Length}, Position={_currentStream.Position}, CanSeek={_currentStream.CanSeek}");
+
+            // Verify stream is seekable
+            if (!_currentStream.CanSeek)
+            {
+                Logger.Error("Stream is not seekable - cannot reprocess audio");
+                throw new InvalidOperationException("Audio stream is not seekable");
+            }
+
+            // Clamp preservePosition to valid range
+            var totalTime = TotalTime;
+            if (preservePosition > totalTime)
+            {
+                Logger.Warning($"preservePosition ({preservePosition}) exceeds TotalTime ({totalTime}), clamping to 0");
+                preservePosition = TimeSpan.Zero;
+            }
+
+            // Reset stream to beginning for fresh processing
+            // This ensures we start from a clean state
+            _currentStream.Position = 0;
+
+            // Verify the position was actually reset
+            if (_currentStream.Position != 0)
+            {
+                Logger.Error($"Failed to reset stream position! Position is still {_currentStream.Position}");
+            }
+
+            Logger.Debug($"Processing audio with format: {_currentStream.WaveFormat}");
+            Logger.Debug($"Stream length: {_currentStream.Length}, Position after reset: {_currentStream.Position}");
+
+            // Verify the format is compatible with WaveToSampleProvider
+            if (_currentStream.WaveFormat.Encoding != WaveFormatEncoding.Pcm &&
+                _currentStream.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
+            {
+                Logger.Error($"Unsupported audio format for processing: {_currentStream.WaveFormat.Encoding}");
+                throw new InvalidOperationException($"Audio format {_currentStream.WaveFormat.Encoding} is not supported. Expected PCM or IEEE Float.");
+            }
+
+            // Create a fresh WaveToSampleProvider from the stream
+            // This converts the wave stream to float samples
+            ISampleProvider provider = new WaveToSampleProvider(_currentStream);
+            Logger.Debug($"Created WaveToSampleProvider. WaveFormat: {provider.WaveFormat}");
+
+            // Apply effects in chain
+            foreach (var effect in _effects.Where(e => e.IsEnabled))
+            {
+                var effectName = effect.GetType().Name;
+                Logger.Debug($"Applying effect: {effectName}");
+                provider = effect.Apply(provider);
+                Logger.Debug($"After {effectName}, WaveFormat: {provider.WaveFormat}");
+            }
+
+            // Verify the final provider is valid
+            if (provider == null)
+            {
+                throw new InvalidOperationException("Processed provider is null after applying effects");
+            }
+
+            // For ProcessAudioInternal, we don't use OffsetSampleProvider anymore
+            // Position preservation is handled at the playback level
+            CurrentTime = preservePosition > TimeSpan.Zero ? preservePosition : TimeSpan.Zero;
+            _initialPlaybackOffset = CurrentTime;
+
+            _processedProvider = provider;
+
+            Logger.Info($"ProcessAudioInternal #{_processAudioCallCount} completed. Final format: {_processedProvider.WaveFormat}");
+            Logger.Debug($"Stream position after processing: {_currentStream.Position}");
+            Logger.Debug($"CurrentTime: {CurrentTime}, InitialOffset: {_initialPlaybackOffset}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Failed to process audio", ex);
+            _processedProvider = null; // Clear invalid provider
+            throw;
         }
         finally
         {
@@ -102,116 +283,6 @@ public class AudioEngine : IDisposable
                 _isProcessing = false;
             }
         }
-    }
-    
-    /// <summary>
-    /// Internal method to process audio - can be called from within a lock context
-    /// </summary>
-    private void ProcessAudioInternal(TimeSpan preservePosition)
-    {
-        _processAudioCallCount++;
-        Logger.Info($"=== ProcessAudioInternal called (call #{_processAudioCallCount}) ===");
-        Logger.Debug($"preservePosition: {preservePosition}");
-        
-        if (_currentStream == null)
-        {
-            Logger.Warning("Cannot process audio: _currentStream is null");
-            _processedProvider = null;
-            return;
-        }
-
-        Logger.Debug($"Stream state before processing: Length={_currentStream.Length}, Position={_currentStream.Position}, CanSeek={_currentStream.CanSeek}");
-        
-        // Verify stream is seekable
-        if (!_currentStream.CanSeek)
-        {
-            Logger.Error("Stream is not seekable - cannot reprocess audio");
-            throw new InvalidOperationException("Audio stream is not seekable");
-        }
-        
-        // Clamp preservePosition to valid range
-        var totalTime = TotalTime;
-        if (preservePosition > totalTime)
-        {
-            Logger.Warning($"preservePosition ({preservePosition}) exceeds TotalTime ({totalTime}), clamping to 0");
-            preservePosition = TimeSpan.Zero;
-        }
-        
-        // Reset stream to beginning for fresh processing
-        // This ensures we start from a clean state
-        _currentStream.Position = 0;
-        
-        // Verify the position was actually reset
-        if (_currentStream.Position != 0)
-        {
-            Logger.Error($"Failed to reset stream position! Position is still {_currentStream.Position}");
-        }
-        
-        Logger.Debug($"Processing audio with format: {_currentStream.WaveFormat}");
-        Logger.Debug($"Stream length: {_currentStream.Length}, Position after reset: {_currentStream.Position}");
-        
-        // Verify the format is compatible with WaveToSampleProvider
-        if (_currentStream.WaveFormat.Encoding != WaveFormatEncoding.Pcm && 
-            _currentStream.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
-        {
-            Logger.Error($"Unsupported audio format for processing: {_currentStream.WaveFormat.Encoding}");
-            throw new InvalidOperationException($"Audio format {_currentStream.WaveFormat.Encoding} is not supported. Expected PCM or IEEE Float.");
-        }
-        
-        // Create a fresh WaveToSampleProvider from the stream
-        // This converts the wave stream to float samples
-        ISampleProvider provider = new WaveToSampleProvider(_currentStream);
-        Logger.Debug($"Created WaveToSampleProvider. WaveFormat: {provider.WaveFormat}");
-        
-        // Apply effects in chain
-        foreach (var effect in _effects.Where(e => e.IsEnabled))
-        {
-            var effectName = effect.GetType().Name;
-            Logger.Debug($"Applying effect: {effectName}");
-            provider = effect.Apply(provider);
-            Logger.Debug($"After {effectName}, WaveFormat: {provider.WaveFormat}");
-        }
-
-        // Verify the final provider is valid
-        if (provider == null)
-        {
-            throw new InvalidOperationException("Processed provider is null after applying effects");
-        }
-
-        // If we need to preserve position, wrap the provider to skip samples
-        if (preservePosition > TimeSpan.Zero)
-        {
-            var sampleRate = provider.WaveFormat.SampleRate;
-            var channels = provider.WaveFormat.Channels;
-            
-            // Account for tempo when calculating samples to skip
-            // The actual audio position in samples depends on the tempo
-            var tempo = _settings.Tempo;
-            var adjustedTime = preservePosition.TotalSeconds;
-            
-            // Clamp to valid range (0 to totalTime)
-            adjustedTime = Math.Max(0, Math.Min(adjustedTime, totalTime.TotalSeconds - 0.1));
-            
-            var samplesToSkip = (int)(adjustedTime * sampleRate * channels);
-            samplesToSkip = Math.Max(0, samplesToSkip); // Ensure non-negative
-            
-            Logger.Debug($"Wrapping provider to skip {samplesToSkip} samples (position: {preservePosition}, adjustedTime: {adjustedTime}s)");
-            provider = new OffsetSampleProvider(provider, samplesToSkip);
-            CurrentTime = preservePosition;
-            // Store the initial offset for position tracking
-            _initialPlaybackOffset = preservePosition;
-        }
-        else
-        {
-            CurrentTime = TimeSpan.Zero;
-            _initialPlaybackOffset = TimeSpan.Zero;
-        }
-        
-        _processedProvider = provider;
-        
-        Logger.Info($"ProcessAudioInternal #{_processAudioCallCount} completed. Final format: {_processedProvider.WaveFormat}");
-        Logger.Debug($"Stream position after processing: {_currentStream.Position}");
-        Logger.Debug($"CurrentTime: {CurrentTime}, InitialOffset: {_initialPlaybackOffset}");
     }
 
     private void UpdateEffects()
@@ -385,7 +456,7 @@ public class AudioEngine : IDisposable
                 // Always reprocess audio to ensure we have a fresh provider chain
                 // This fixes issues where the provider chain was consumed or in an invalid state
                 Logger.Debug($"Reprocessing audio for fresh provider chain. CurrentTime: {CurrentTime}");
-                ProcessAudioInternal(CurrentTime);
+                ProcessAudioInternal(CurrentTime); // Preserve current time when processing
 
                 // Verify processed provider is valid
                 if (_processedProvider == null)
@@ -406,10 +477,10 @@ public class AudioEngine : IDisposable
                 _wavePlayer = new NAudio.Wave.WaveOutEvent();
                 _wavePlayer.PlaybackStopped += OnPlaybackStopped;
 
-                // Initialize with processed audio
-                // SampleToWaveProvider requires the input to already be in float format
-                Logger.Debug("Creating SampleToWaveProvider from processed provider");
-                var waveProvider = new SampleToWaveProvider(_processedProvider);
+                // Initialize with processed audio starting at CurrentTime
+                Logger.Debug("Creating SampleToWaveProvider from processed provider with seek");
+                var startProvider = CreateSkippedProvider(_processedProvider, CurrentTime);
+                var waveProvider = new SampleToWaveProvider(startProvider);
                 Logger.Debug($"WaveProvider format: {waveProvider.WaveFormat}");
                 
                 Logger.Debug("Initializing WaveOutEvent");
@@ -419,10 +490,11 @@ public class AudioEngine : IDisposable
                 _wavePlayer.Play();
 
                 IsPlaying = true;
-                
+
                 // Track playback start time and offset for position tracking
                 _playbackStartTime = DateTime.Now;
                 _playbackStartOffset = CurrentTime;
+                _initialPlaybackOffset = CurrentTime;
                 
                 OnPlaybackStateChanged(PlaybackState.Playing);
 
@@ -526,10 +598,11 @@ public class AudioEngine : IDisposable
                 
                 // Clear the processed provider so it will be recreated fresh on next play
                 _processedProvider = null;
-                
+
                 CurrentTime = TimeSpan.Zero;
                 _initialPlaybackOffset = TimeSpan.Zero;
                 _playbackStartOffset = TimeSpan.Zero;
+                _playbackStartTime = DateTime.MinValue;
                 
                 OnPlaybackStateChanged(PlaybackState.Stopped);
                 Logger.Info("Audio stopped successfully");
@@ -558,18 +631,104 @@ public class AudioEngine : IDisposable
                 position = TotalTime;
 
             Logger.Debug($"Seek called with position: {position}");
-            
-            // Update current time - this will be used when Play() is called
+
+            // Update current time
             CurrentTime = position;
             _initialPlaybackOffset = position;
             _playbackStartOffset = position;
-            
-            // Clear the processed provider so it will be recreated with the new position
-            _processedProvider = null;
-            
+
+            // If currently playing, restart playback from the new position
+            if (IsPlaying && _wavePlayer != null)
+            {
+                Logger.Debug("Seeking during playback - restarting from new position");
+
+                // Stop current playback
+                _wavePlayer.PlaybackStopped -= OnPlaybackStopped;
+                _wavePlayer.Stop();
+                _wavePlayer.Dispose();
+                _wavePlayer = null;
+                IsPlaying = false;
+                StopPositionTimer();
+
+                // Start playback from the new position
+                try
+                {
+                    if (_processedProvider == null)
+                    {
+                        Logger.Error("Cannot seek - processed provider is null");
+                        return;
+                    }
+
+                    if (_processedProvider.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
+                    {
+                        Logger.Error($"Cannot seek - processed provider is not in IEEE Float format: {_processedProvider.WaveFormat.Encoding}");
+                        return;
+                    }
+
+                    var startProvider = CreateSkippedProvider(_processedProvider, position);
+
+                    // Create new player
+                    Logger.Debug("Creating new WaveOutEvent for seek during playback");
+                    _wavePlayer = new NAudio.Wave.WaveOutEvent();
+                    _wavePlayer.PlaybackStopped += OnPlaybackStopped;
+
+                    var waveProvider = new SampleToWaveProvider(startProvider);
+                    Logger.Debug($"WaveProvider format: {waveProvider.WaveFormat}");
+
+                    _wavePlayer.Init(waveProvider);
+                    _wavePlayer.Play();
+
+                    IsPlaying = true;
+
+                    // Track playback start time and offset
+                    _playbackStartTime = DateTime.Now - position; // Adjust start time so position calculation works
+                    _playbackStartOffset = position;
+                    _initialPlaybackOffset = position;
+
+                    OnPlaybackStateChanged(PlaybackState.Playing);
+                    StartPositionTimer();
+
+                    Logger.Info($"Audio playback restarted from seek position: {position}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Failed to restart playback after seek", ex);
+                    IsPlaying = false;
+                    StopPositionTimer();
+                }
+            }
+            else
+            {
+                // Not playing, just update the position for when playback starts
+                Logger.Debug("Seek called while not playing - position updated for next playback");
+            }
+
             OnPositionChanged(CurrentTime);
             Logger.Debug($"Seek completed. CurrentTime: {CurrentTime}");
         }
+    }
+
+    /// <summary>
+    /// Build a provider that starts playback at the requested position by skipping samples.
+    /// </summary>
+    private ISampleProvider CreateSkippedProvider(ISampleProvider source, TimeSpan position)
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+
+        if (position <= TimeSpan.Zero)
+            return source;
+
+        // Clamp to just before the end to avoid end-of-stream skip warnings
+        var total = TotalTime;
+        if (total > TimeSpan.Zero && position >= total)
+        {
+            position = total - TimeSpan.FromMilliseconds(50);
+            if (position < TimeSpan.Zero) position = TimeSpan.Zero;
+        }
+
+        var samplesToSkip = (int)(position.TotalSeconds * source.WaveFormat.SampleRate * source.WaveFormat.Channels);
+        Logger.Debug($"CreateSkippedProvider: position={position}, samplesToSkip={samplesToSkip}");
+        return new OffsetSampleProvider(source, samplesToSkip);
     }
 
     private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
@@ -625,30 +784,18 @@ public class AudioEngine : IDisposable
     {
         try
         {
-            if (_wavePlayer != null && IsPlaying)
+            if (_wavePlayer != null && IsPlaying && _playbackStartTime != DateTime.MinValue)
             {
-                // If we have an initial offset (from OffsetSampleProvider), track position based on elapsed time
-                if (_initialPlaybackOffset > TimeSpan.Zero)
-                {
-                    var elapsed = DateTime.Now - _playbackStartTime;
-                    CurrentTime = _playbackStartOffset + elapsed;
-                }
-                else if (_currentStream != null)
-                {
-                    // Calculate position based on stream position and sample rate
-                    var bytesPerSecond = _currentStream.WaveFormat.AverageBytesPerSecond;
-                    if (bytesPerSecond > 0)
-                    {
-                        CurrentTime = TimeSpan.FromSeconds((double)_currentStream.Position / bytesPerSecond);
-                    }
-                }
-                
+                // Track position based on elapsed time from playback start
+                var elapsed = DateTime.Now - _playbackStartTime;
+                CurrentTime = _playbackStartOffset + elapsed;
+
                 // Ensure we don't exceed total time
                 if (CurrentTime > TotalTime)
                 {
                     CurrentTime = TotalTime;
                 }
-                
+
                 OnPositionChanged(CurrentTime);
             }
         }
@@ -718,42 +865,43 @@ internal class OffsetSampleProvider : ISampleProvider
     public int Read(float[] buffer, int offset, int count)
     {
         _readCallCount++;
-        
+
         // Log every 100th call to avoid spam
         if (_readCallCount <= 5 || _readCallCount % 100 == 0)
         {
             Logging.Logger.Debug($"OffsetSampleProvider #{_instanceId} Read #{_readCallCount}: count={count}, skipped={_samplesSkipped}/{_samplesToSkip}, totalRead={_totalSamplesRead}");
         }
-        
+
         // Skip samples first if we haven't skipped enough yet
         while (_samplesSkipped < _samplesToSkip)
         {
             int remainingToSkip = _samplesToSkip - _samplesSkipped;
             int samplesToReadNow = Math.Min(remainingToSkip, 4096); // Read in chunks
-            
+
             // Read and discard these samples
             float[] skipBuffer = new float[samplesToReadNow];
             int actuallyRead = _source.Read(skipBuffer, 0, samplesToReadNow);
-            
+
             if (actuallyRead == 0)
             {
-                // End of stream reached while skipping
+                // End of stream reached while skipping - this can happen if position calculation is wrong
                 Logging.Logger.Warning($"OffsetSampleProvider #{_instanceId}: End of stream while skipping! skipped={_samplesSkipped}/{_samplesToSkip}");
-                return 0;
+                _samplesSkipped = _samplesToSkip; // Mark as done to avoid infinite loop
+                break;
             }
-            
+
             _samplesSkipped += actuallyRead;
         }
-        
+
         // Now read normally into the output buffer
         int samplesRead = _source.Read(buffer, offset, count);
         _totalSamplesRead += samplesRead;
-        
+
         if (samplesRead == 0 && _readCallCount <= 10)
         {
             Logging.Logger.Warning($"OffsetSampleProvider #{_instanceId}: Source returned 0 samples on Read #{_readCallCount}");
         }
-        
+
         return samplesRead;
     }
 }

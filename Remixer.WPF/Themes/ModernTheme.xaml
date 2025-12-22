@@ -452,15 +452,51 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Border Background="{TemplateBinding Background}" 
+                    <Border Background="{TemplateBinding Background}"
                             CornerRadius="3">
                         <Grid>
                             <Border x:Name="PART_Track" />
-                            <Border x:Name="PART_Indicator" 
+                            <Border x:Name="PART_Indicator"
                                     Background="{TemplateBinding Foreground}"
                                     HorizontalAlignment="Left"
                                     CornerRadius="3"/>
                         </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ModernSeekBar" TargetType="Slider">
+        <Setter Property="Height" Value="6"/>
+        <Setter Property="Background" Value="{StaticResource BackgroundTertiary}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Minimum" Value="0"/>
+        <Setter Property="Maximum" Value="100"/>
+        <Setter Property="IsSnapToTickEnabled" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="3" Height="6">
+                        <Track x:Name="PART_Track" Height="6">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Background="{TemplateBinding Foreground}"
+                                              BorderThickness="0"
+                                              Command="Slider.DecreaseLarge"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Background="{TemplateBinding Foreground}"
+                                       Width="12" Height="6"
+                                       BorderThickness="0"/>
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Background="{StaticResource BackgroundTertiary}"
+                                              BorderThickness="0"
+                                              Command="Slider.IncreaseLarge"/>
+                            </Track.IncreaseRepeatButton>
+                        </Track>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

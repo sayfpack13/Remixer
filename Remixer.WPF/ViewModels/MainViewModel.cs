@@ -9,7 +9,9 @@ using Remixer.Core.Models;
 using Remixer.Core.Presets;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -17,8 +19,8 @@ namespace Remixer.WPF.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    private readonly AudioEngine _audioEngine = null!;
-    private readonly PresetManager _presetManager = null!;
+    private readonly AudioEngine _audioEngine;
+    private readonly PresetManager _presetManager;
     private AIService? _aiService;
     private AIRemixEngine? _aiRemixEngine;
     private string? _currentAudioFile;
@@ -28,6 +30,11 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private bool _isAudioLoaded;
+
+    private bool _hasEverLoadedAudio;
+    private AudioSettings? _lastAppliedSettingsSnapshot;
+
+    public bool ShouldShowLoadAudioFirst => !IsAudioLoaded && !_hasEverLoadedAudio;
     
     [ObservableProperty]
     private bool _isProcessing;
@@ -52,6 +59,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private Preset? _selectedPreset;
+
+    [ObservableProperty]
+    private bool _isApplyingEffects;
 
     [ObservableProperty]
     private string _currentFile = "No file loaded";
@@ -86,38 +96,43 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         Logger.Info("=== MainViewModel Initialization Started ===");
-        
+
         try
         {
             _audioEngine = new AudioEngine();
             _presetManager = new PresetManager();
             LoadPresets();
             InitializeAIService();
-            
+
             // Subscribe to playback events
             _audioEngine.PlaybackStateChanged += OnPlaybackStateChanged;
             _audioEngine.PositionChanged += OnPositionChanged;
-            
+
             Logger.Info($"MainViewModel initialized successfully. Log file: {Logger.GetLogFilePath()}");
         }
         catch (Exception ex)
         {
-            // Log error but don't crash - show in status
+            // Log critical error and re-throw - the application cannot function without these core components
             Logger.Critical("MainViewModel initialization failed", ex);
-            AIStatus = $"Initialization error: {ex.Message}";
             System.Diagnostics.Debug.WriteLine($"MainViewModel initialization error: {ex}");
             System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw new InvalidOperationException("Failed to initialize MainViewModel", ex);
         }
     }
     
     private void OnPlaybackStateChanged(object? sender, Remixer.Core.Audio.PlaybackStateChangedEventArgs e)
     {
+        if (Application.Current == null)
+        {
+            return;
+        }
+
         Application.Current.Dispatcher.Invoke(() =>
         {
             Logger.Debug($"Playback state changed to: {e.State}");
             IsPlaying = e.State == Remixer.Core.Audio.PlaybackState.Playing;
             Logger.Debug($"IsPlaying updated to: {IsPlaying}");
-            
+
             PlayCommand.NotifyCanExecuteChanged();
             PauseCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
@@ -126,12 +141,17 @@ public partial class MainViewModel : ObservableObject
     
     private void OnPositionChanged(object? sender, TimeSpan position)
     {
+        if (Application.Current == null || _audioEngine == null)
+        {
+            return;
+        }
+
         Application.Current.Dispatcher.Invoke(() =>
         {
             CurrentPosition = $"{position:mm\\:ss}";
             var total = _audioEngine.TotalTime;
             TotalDuration = $"{total:mm\\:ss}";
-            
+
             if (total.TotalSeconds > 0)
             {
                 PlaybackPosition = position.TotalSeconds / total.TotalSeconds * 100.0;
@@ -146,12 +166,11 @@ public partial class MainViewModel : ObservableObject
             // Load configuration directly from code
             var apiEndpoint = AppConfiguration.AIEndpoint;
             var apiKey = AppConfiguration.AIKey;
-            var modelName = AppConfiguration.AIModel;
 
             // Only initialize if endpoint is configured
             if (!string.IsNullOrEmpty(apiEndpoint))
             {
-                _aiService = new AIService(apiEndpoint, apiKey, modelName);
+                _aiService = new AIService(apiEndpoint, apiKey);
                 _aiRemixEngine = new AIRemixEngine(_aiService);
                 _aiRemixEngine.AnalysisProgress += (s, e) =>
                 {
@@ -180,6 +199,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanLoadAudio))]
     private async Task LoadAudioAsync()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("LoadAudioAsync called but _audioEngine is null");
+            return;
+        }
+
         var dialog = new OpenFileDialog
         {
             Filter = "Audio Files|*.mp3;*.wav;*.flac;*.ogg;*.m4a;*.aac|All Files|*.*",
@@ -188,15 +213,22 @@ public partial class MainViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
+            var filePath = dialog.FileName;
+            if (string.IsNullOrEmpty(filePath))
+            {
+                Logger.Error("LoadAudioAsync: File path is null or empty");
+                return;
+            }
+
             try
             {
                 IsLoadingAudio = true;
                 Progress = 0;
                 AIStatus = "Loading audio file...";
-                
+
                 await Task.Run(() =>
                 {
-                    _currentAudioFile = dialog.FileName;
+                    _currentAudioFile = filePath;
                     _audioEngine.LoadAudio(_currentAudioFile);
                 });
                 
@@ -237,6 +269,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanAIRemix))]
     private async Task AIRemix()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("AIRemix called but _audioEngine is null");
+            return;
+        }
+
         if (_aiRemixEngine == null || _currentAudioFile == null)
         {
             MessageBox.Show("AI service not configured or no audio loaded.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -246,7 +284,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             Logger.Info("Starting AI remix");
-            
+
             // Save current playback state
             var wasPlaying = IsPlaying;
             var currentPosition = _audioEngine.CurrentTime;
@@ -266,8 +304,9 @@ public partial class MainViewModel : ObservableObject
 
             await _aiRemixEngine.RemixAsync(_audioEngine);
             
-            // Get the new settings from audio engine
-            var newSettings = _audioEngine.Settings;
+            // Get the new settings from audio engine (clone to decouple UI from engine instance)
+            var newSettings = CloneSettings(_audioEngine.Settings);
+            _lastAppliedSettingsSnapshot = CloneSettings(newSettings);
             
             // Unsubscribe from old settings
             var oldSettings = Settings;
@@ -279,7 +318,7 @@ public partial class MainViewModel : ObservableObject
                 if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
             }
             
-            // Update settings
+            // Update settings (UI gets its own instance)
             Settings = newSettings;
             IsAISet = Settings.IsAISet;
             OnPropertyChanged(nameof(Settings));
@@ -330,13 +369,19 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanApplyPreset))]
     private void ApplyPreset()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("ApplyPreset called but _audioEngine is null");
+            return;
+        }
+
         if (SelectedPreset == null)
             return;
 
         try
         {
             Logger.Info($"Applying preset: {SelectedPreset.Name}");
-            
+
             // Temporarily disable real-time updates to prevent conflicts
             var oldSettings = Settings;
             if (oldSettings != null)
@@ -346,7 +391,7 @@ public partial class MainViewModel : ObservableObject
                 if (oldSettings.Echo != null) oldSettings.Echo.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
             }
-            
+
             // Save current playback state BEFORE any operations
             var wasPlaying = IsPlaying;
             var currentPosition = _audioEngine.CurrentTime;
@@ -393,8 +438,10 @@ public partial class MainViewModel : ObservableObject
                 IsAISet = false
             };
 
-            // Update audio engine settings first
-            _audioEngine.Settings = newSettings;
+            // Update audio engine settings first (use a deep copy so the engine doesn't share UI instance)
+            var engineSettings = CloneSettings(newSettings);
+            _audioEngine.Settings = engineSettings;
+            _lastAppliedSettingsSnapshot = engineSettings;
             
             // Now set the ViewModel property (this will subscribe to new settings)
             Settings = newSettings;
@@ -557,6 +604,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanExportAudio))]
     private void ExportAudio()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("ExportAudio called but _audioEngine is null");
+            return;
+        }
+
         if (_currentAudioFile == null)
         {
             MessageBox.Show("No audio loaded.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -568,7 +621,7 @@ public partial class MainViewModel : ObservableObject
             var defaultFileName = Path.GetFileNameWithoutExtension(_currentAudioFile) + "_remixed.wav";
             var exportDialog = new Views.ExportDialog(defaultFileName)
             {
-                Owner = Application.Current.MainWindow
+                Owner = Application.Current?.MainWindow
             };
 
             if (exportDialog.ShowDialog() == true)
@@ -602,7 +655,9 @@ public partial class MainViewModel : ObservableObject
         if (_audioEngine != null)
         {
             Settings.IsAISet = false; // User override
-            _audioEngine.Settings = Settings;
+            var engineSettings = CloneSettings(Settings);
+            _audioEngine.Settings = engineSettings;
+            _lastAppliedSettingsSnapshot = engineSettings;
             IsAISet = false;
         }
     }
@@ -716,9 +771,15 @@ public partial class MainViewModel : ObservableObject
     private System.Threading.Timer? _settingsUpdateTimer;
     private readonly object _settingsUpdateLock = new object();
     private volatile bool _isApplyingSettings = false;
+    private bool _disposed = false;
     
     private void OnSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         // Debounce rapid changes (e.g., dragging sliders)
         lock (_settingsUpdateLock)
         {
@@ -727,6 +788,11 @@ public partial class MainViewModel : ObservableObject
             {
                 try
                 {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
                         if (!IsProcessing && !IsLoadingAudio && IsAudioLoaded && !_isApplyingSettings)
@@ -742,11 +808,42 @@ public partial class MainViewModel : ObservableObject
             }, null, 150, System.Threading.Timeout.Infinite); // 150ms debounce
         }
     }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+
+            lock (_settingsUpdateLock)
+            {
+                _settingsUpdateTimer?.Dispose();
+                _settingsUpdateTimer = null;
+            }
+
+            _audioEngine?.Dispose();
+        }
+    }
     
     private static int _applySettingsCount = 0;
     
     private void ApplySettingsRealtime()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("ApplySettingsRealtime called but _audioEngine is null");
+            return;
+        }
+
+        // Check if settings actually changed to avoid unnecessary reprocessing.
+        // IMPORTANT: the engine must not share the same Settings instance as the UI, otherwise changes
+        // look "already applied" and realtime preview breaks.
+        if (_lastAppliedSettingsSnapshot != null && SettingsEqual(_lastAppliedSettingsSnapshot, Settings))
+        {
+            Logger.Debug("Settings unchanged, skipping reprocessing");
+            return;
+        }
+
         // Prevent concurrent calls
         lock (_settingsUpdateLock)
         {
@@ -757,64 +854,67 @@ public partial class MainViewModel : ObservableObject
             }
             _isApplyingSettings = true;
         }
-        
+
+        // Set the applying effects indicator
+        IsApplyingEffects = true;
+
         try
         {
             _applySettingsCount++;
             Logger.Info($"=== ApplySettingsRealtime called (call #{_applySettingsCount}) ===");
-            
+
             Logger.Debug($"Settings: Tempo={Settings.Tempo:F2}, Pitch={Settings.Pitch:F1}, Volume={Settings.Volume:F2}");
             Logger.Debug($"Effects: Reverb={Settings.Reverb.Enabled}, Echo={Settings.Echo.Enabled}, Filter={Settings.Filter.Enabled}");
-            
-            // Save current playback state BEFORE any operations
-            var wasPlaying = IsPlaying;
-            var engineIsPlaying = _audioEngine.IsPlaying;
+
+            // Save current playback state - these are atomic operations
+            var wasPlaying = IsPlaying || _audioEngine.IsPlaying;
             var currentPosition = _audioEngine.CurrentTime;
             var totalDuration = _audioEngine.TotalTime;
-            
-            Logger.Debug($"State: VM.IsPlaying={wasPlaying}, Engine.IsPlaying={engineIsPlaying}");
+
+            Logger.Debug($"State: wasPlaying={wasPlaying}");
             Logger.Debug($"Position: {currentPosition} / {totalDuration}");
-            
-            // Clamp position to valid range
-            if (currentPosition > totalDuration)
+
+            // Calculate position as a percentage for better preservation across tempo changes
+            double positionPercentage = 0.0;
+            if (totalDuration.TotalSeconds > 0)
             {
-                currentPosition = TimeSpan.Zero;
-                Logger.Debug($"Position clamped to zero (was beyond total duration)");
+                positionPercentage = currentPosition.TotalSeconds / totalDuration.TotalSeconds;
+                positionPercentage = Math.Max(0.0, Math.Min(1.0, positionPercentage)); // Clamp to 0-1
             }
+
+            Logger.Debug($"Position percentage: {positionPercentage:P2}");
             
-            // Stop playback if playing (we need to recreate it with new processed audio)
-            // Use Stop instead of Pause to fully reset the player state
-            if (wasPlaying || engineIsPlaying)
+            // Pause playback if playing (we need to recreate the player with new effects)
+            if (wasPlaying)
             {
-                Logger.Debug("Stopping playback to apply new settings");
+                Logger.Debug("Pausing playback to apply new settings");
                 try
                 {
-                    _audioEngine.Stop();
+                    _audioEngine.Pause();
                 }
                 catch (Exception ex)
                 {
-                    Logger.Debug($"Error stopping playback: {ex.Message}");
+                    Logger.Debug($"Error pausing playback: {ex.Message}");
                 }
             }
             
-            // Update settings in audio engine
+            // Update settings in audio engine (this updates the effects list)
+            // Use a deep copy so the engine doesn't share the same instance as the UI bindings.
             Settings.IsAISet = false; // User override
-            _audioEngine.Settings = Settings;
+            var engineSettings = CloneSettings(Settings);
+            _audioEngine.Settings = engineSettings;
+            _lastAppliedSettingsSnapshot = engineSettings;
             IsAISet = false;
             
-            // Update the current time so Play() will use it
-            // Don't call ProcessAudio here - Play() will do it with the fresh position
-            
-            // Restore playback state if it was playing
-            if (wasPlaying || engineIsPlaying)
+            // Resume playback if it was playing
+            if (wasPlaying)
             {
-                Logger.Debug($"Calling Play() to resume playback from position: {currentPosition}");
+                Logger.Debug($"Restarting playback after settings change from {positionPercentage:P2} position");
                 try
                 {
-                    // Set the current time before playing so Play() knows where to start
-                    _audioEngine.Seek(currentPosition);
-                    _audioEngine.Play();
-                    Logger.Debug($"Play() returned. Engine.IsPlaying={_audioEngine.IsPlaying}");
+                    // Process audio and start playback from the position percentage
+                    _audioEngine.ProcessAudioAndPlay(positionPercentage);
+                    Logger.Debug($"ProcessAudioAndPlay completed. Engine.IsPlaying={_audioEngine.IsPlaying}");
                 }
                 catch (Exception ex)
                 {
@@ -824,11 +924,12 @@ public partial class MainViewModel : ObservableObject
             }
             else
             {
-                // Even if not playing, update the processed audio for when user clicks play
-                // This ensures the new settings are applied
+                // If not playing, just process the audio with new settings
+                // so it's ready when user clicks play
+                Logger.Debug($"Processing audio with new settings");
                 try
                 {
-                    _audioEngine.ProcessAudio(currentPosition);
+                    _audioEngine.ProcessAudio();
                 }
                 catch (Exception ex)
                 {
@@ -850,7 +951,84 @@ public partial class MainViewModel : ObservableObject
             {
                 _isApplyingSettings = false;
             }
+            // Clear the applying effects indicator after a short delay to make it visible
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                Application.Current?.Dispatcher?.Invoke(() => IsApplyingEffects = false);
+            });
         }
+    }
+
+    private bool SettingsEqual(AudioSettings current, AudioSettings newSettings)
+    {
+        if (current == null || newSettings == null)
+            return false;
+
+        // Compare basic settings
+        if (Math.Abs(current.Tempo - newSettings.Tempo) > 0.01 ||
+            Math.Abs(current.Pitch - newSettings.Pitch) > 0.01 ||
+            Math.Abs(current.Volume - newSettings.Volume) > 0.01)
+            return false;
+
+        // Compare reverb settings
+        if (current.Reverb.Enabled != newSettings.Reverb.Enabled ||
+            Math.Abs(current.Reverb.RoomSize - newSettings.Reverb.RoomSize) > 0.01 ||
+            Math.Abs(current.Reverb.Damping - newSettings.Reverb.Damping) > 0.01 ||
+            Math.Abs(current.Reverb.WetLevel - newSettings.Reverb.WetLevel) > 0.01)
+            return false;
+
+        // Compare echo settings
+        if (current.Echo.Enabled != newSettings.Echo.Enabled ||
+            Math.Abs(current.Echo.Delay - newSettings.Echo.Delay) > 0.01 ||
+            Math.Abs(current.Echo.Feedback - newSettings.Echo.Feedback) > 0.01 ||
+            Math.Abs(current.Echo.WetLevel - newSettings.Echo.WetLevel) > 0.01)
+            return false;
+
+        // Compare filter settings
+        if (current.Filter.Enabled != newSettings.Filter.Enabled ||
+            Math.Abs(current.Filter.LowCut - newSettings.Filter.LowCut) > 1 ||
+            Math.Abs(current.Filter.HighCut - newSettings.Filter.HighCut) > 1 ||
+            Math.Abs(current.Filter.LowGain - newSettings.Filter.LowGain) > 0.1 ||
+            Math.Abs(current.Filter.MidGain - newSettings.Filter.MidGain) > 0.1 ||
+            Math.Abs(current.Filter.HighGain - newSettings.Filter.HighGain) > 0.1)
+            return false;
+
+        return true;
+    }
+
+    private AudioSettings CloneSettings(AudioSettings source)
+    {
+        // Deep copy: engine must not share the same instance as the UI
+        return new AudioSettings
+        {
+            Tempo = source.Tempo,
+            Pitch = source.Pitch,
+            Volume = source.Volume,
+            IsAISet = source.IsAISet,
+            Reverb = new ReverbSettings
+            {
+                Enabled = source.Reverb.Enabled,
+                RoomSize = source.Reverb.RoomSize,
+                Damping = source.Reverb.Damping,
+                WetLevel = source.Reverb.WetLevel
+            },
+            Echo = new EchoSettings
+            {
+                Enabled = source.Echo.Enabled,
+                Delay = source.Echo.Delay,
+                Feedback = source.Echo.Feedback,
+                WetLevel = source.Echo.WetLevel
+            },
+            Filter = new FilterSettings
+            {
+                Enabled = source.Filter.Enabled,
+                LowCut = source.Filter.LowCut,
+                HighCut = source.Filter.HighCut,
+                LowGain = source.Filter.LowGain,
+                MidGain = source.Filter.MidGain,
+                HighGain = source.Filter.HighGain
+            }
+        };
     }
     
     partial void OnIsProcessingChanged(bool value)
@@ -879,6 +1057,14 @@ public partial class MainViewModel : ObservableObject
     partial void OnIsAudioLoadedChanged(bool value)
     {
         Logger.Info($"IsAudioLoaded changed to: {value}");
+        if (value)
+        {
+            _hasEverLoadedAudio = true;
+        }
+
+        // Notify that ShouldShowLoadAudioFirst might have changed
+        OnPropertyChanged(nameof(ShouldShowLoadAudioFirst));
+
         LoadAudioCommand.NotifyCanExecuteChanged();
         AIRemixCommand.NotifyCanExecuteChanged();
         ApplyPresetCommand.NotifyCanExecuteChanged();
@@ -887,7 +1073,7 @@ public partial class MainViewModel : ObservableObject
         PlayCommand.NotifyCanExecuteChanged();
         PauseCommand.NotifyCanExecuteChanged();
         StopCommand.NotifyCanExecuteChanged();
-        
+
         Logger.Info($"CanPlay() = {CanPlay()}, IsPlaying={IsPlaying}, IsProcessing={IsProcessing}, IsLoadingAudio={IsLoadingAudio}");
     }
     
@@ -908,6 +1094,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private void Play()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("Play command called but _audioEngine is null");
+            return;
+        }
+
         try
         {
             Logger.Info($"Play command called. IsAudioLoaded={IsAudioLoaded}, IsPlaying={IsPlaying}, IsProcessing={IsProcessing}, IsLoadingAudio={IsLoadingAudio}");
@@ -928,6 +1120,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanPause))]
     private void Pause()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("Pause command called but _audioEngine is null");
+            return;
+        }
+
         try
         {
             Logger.Info($"Pause command called. IsPlaying={IsPlaying}");
@@ -948,21 +1146,27 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void Stop()
     {
+        if (_audioEngine == null)
+        {
+            Logger.Error("Stop command called but _audioEngine is null");
+            return;
+        }
+
         try
         {
             Logger.Info($"Stop command called. IsPlaying={IsPlaying}, PlaybackPosition={PlaybackPosition}");
             _audioEngine.Stop();
-            
+
             // Reset UI
             CurrentPosition = "00:00";
             PlaybackPosition = 0;
             IsPlaying = false;
-            
+
             // Notify commands to update their enabled state
             PlayCommand.NotifyCanExecuteChanged();
             PauseCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
-            
+
             Logger.Info("Stop command completed successfully");
         }
         catch (Exception ex)
@@ -972,6 +1176,31 @@ public partial class MainViewModel : ObservableObject
             MessageBox.Show($"Error stopping audio: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    [RelayCommand(CanExecute = nameof(CanSeek))]
+    private void Seek(double sliderValue)
+    {
+        if (_audioEngine == null || !IsAudioLoaded)
+        {
+            Logger.Debug("Seek called but audio engine is null or no audio loaded");
+            return;
+        }
+
+        try
+        {
+            var totalDuration = _audioEngine.TotalTime;
+            var seekPosition = TimeSpan.FromSeconds((sliderValue / 100.0) * totalDuration.TotalSeconds);
+
+            Logger.Debug($"Seeking to position: {seekPosition} (slider value: {sliderValue}%)");
+            _audioEngine.Seek(seekPosition);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Seek command failed", ex);
+        }
+    }
+
+    private bool CanSeek() => IsAudioLoaded && !IsProcessing && !IsLoadingAudio;
     
     private bool CanStop() => IsAudioLoaded;
 }

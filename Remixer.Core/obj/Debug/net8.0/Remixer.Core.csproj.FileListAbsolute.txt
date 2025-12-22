@@ -6,6 +6,7 @@ C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Co
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.AssemblyInfoInputs.cache
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.AssemblyInfo.cs
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.csproj.CoreCompileInputs.cache
+C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.sourcelink.json
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.dll
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\refint\Remixer.Core.dll
 C:\Users\sayfp\OneDrive\Desktop\remixer\Remixer.Core\obj\Debug\net8.0\Remixer.Core.pdb

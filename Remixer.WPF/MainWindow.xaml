@@ -18,6 +18,7 @@
             <local:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
             <local:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
             <local:AllTrueToBooleanConverter x:Key="AllTrueToBooleanConverter"/>
+            <local:StatusTextConverter x:Key="StatusTextConverter"/>
         </ResourceDictionary>
     </Window.Resources>
     <Window.Background>
@@ -109,9 +110,26 @@
                                Style="{StaticResource CaptionText}" VerticalAlignment="Center"/>
                 </Grid>
                 
-                <!-- Playback Progress Bar -->
-                <ProgressBar Grid.Row="2" Value="{Binding PlaybackPosition}" Maximum="100" 
-                             Style="{StaticResource ModernProgressBar}"/>
+                <!-- Playback Seek Bar -->
+                <Slider Grid.Row="2" Value="{Binding PlaybackPosition}" Maximum="100"
+                        Style="{StaticResource ModernSeekBar}"
+                        Visibility="{Binding IsApplyingEffects, Converter={StaticResource InvertedBooleanConverter}}"
+                        PreviewMouseLeftButtonDown="SeekBar_PreviewMouseLeftButtonDown"
+                        PreviewMouseMove="SeekBar_PreviewMouseMove"
+                        PreviewMouseUp="SeekBar_PreviewMouseUp"
+                        PreviewKeyDown="SeekBar_PreviewKeyDown"
+                        ToolTip="{Binding CurrentPosition, StringFormat='Current: {0}'}"
+                        Focusable="True"/>
+
+                <!-- Applying Effects Indicator - Replaces Progress Bar -->
+                <Border Grid.Row="2" Background="{StaticResource AccentPrimary}"
+                        CornerRadius="4" Padding="12" Margin="0,0,0,0"
+                        Visibility="{Binding IsApplyingEffects, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="⚡ Applying Effects..." Style="{StaticResource BodyText}"
+                                   Foreground="White" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -192,8 +210,26 @@
             <!-- Right Panel - Audio Controls -->
             <ScrollViewer Grid.Column="1" Style="{StaticResource ModernScrollViewer}">
                 <StackPanel>
+                    <!-- No Audio Loaded Message -->
+                    <Border Background="{StaticResource BackgroundSecondary}"
+                            CornerRadius="6" Padding="16" Margin="0,0,0,16"
+                            Visibility="{Binding ShouldShowLoadAudioFirst, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="🎵 Load Audio First" Style="{StaticResource BodyText}"
+                                       FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                                       HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <TextBlock Text="Click 'Load Audio' to start remixing your music!"
+                                       Style="{StaticResource CaptionText}" Foreground="{StaticResource TextSecondary}"
+                                       HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+
                     <!-- Tempo & Pitch -->
                     <GroupBox Header="Tempo &amp; Pitch" Style="{StaticResource ModernGroupBox}">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
                         <StackPanel>
                             <Grid Margin="0,0,0,12">
                                 <Grid.ColumnDefinitions>
@@ -248,13 +284,9 @@
 
                     <!-- Reverb -->
                     <GroupBox Header="Reverb" Style="{StaticResource ModernGroupBox}">
-                        <GroupBox.IsEnabled>
-                            <MultiBinding Converter="{StaticResource AllTrueToBooleanConverter}">
-                                <Binding Path="IsAudioLoaded"/>
-                                <Binding Path="IsProcessing" Converter="{StaticResource InvertedBooleanConverter}"/>
-                                <Binding Path="IsLoadingAudio" Converter="{StaticResource InvertedBooleanConverter}"/>
-                            </MultiBinding>
-                        </GroupBox.IsEnabled>
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
                         <StackPanel>
                             <CheckBox Content="Enable Reverb" IsChecked="{Binding Settings.Reverb.Enabled}" 
                                       Style="{StaticResource ModernCheckBox}"/>
@@ -318,13 +350,9 @@
 
                     <!-- Echo -->
                     <GroupBox Header="Echo / Delay" Style="{StaticResource ModernGroupBox}">
-                        <GroupBox.IsEnabled>
-                            <MultiBinding Converter="{StaticResource AllTrueToBooleanConverter}">
-                                <Binding Path="IsAudioLoaded"/>
-                                <Binding Path="IsProcessing" Converter="{StaticResource InvertedBooleanConverter}"/>
-                                <Binding Path="IsLoadingAudio" Converter="{StaticResource InvertedBooleanConverter}"/>
-                            </MultiBinding>
-                        </GroupBox.IsEnabled>
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
                         <StackPanel>
                             <CheckBox Content="Enable Echo" IsChecked="{Binding Settings.Echo.Enabled}" 
                                       Style="{StaticResource ModernCheckBox}"/>
@@ -388,13 +416,9 @@
 
                     <!-- Filter / EQ -->
                     <GroupBox Header="Filter / EQ" Style="{StaticResource ModernGroupBox}">
-                        <GroupBox.IsEnabled>
-                            <MultiBinding Converter="{StaticResource AllTrueToBooleanConverter}">
-                                <Binding Path="IsAudioLoaded"/>
-                                <Binding Path="IsProcessing" Converter="{StaticResource InvertedBooleanConverter}"/>
-                                <Binding Path="IsLoadingAudio" Converter="{StaticResource InvertedBooleanConverter}"/>
-                            </MultiBinding>
-                        </GroupBox.IsEnabled>
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
                         <StackPanel>
                             <CheckBox Content="Enable Filter" IsChecked="{Binding Settings.Filter.Enabled}" 
                                       Style="{StaticResource ModernCheckBox}"/>
@@ -515,8 +539,17 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="240"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Ready" Style="{StaticResource CaptionText}" 
-                           VerticalAlignment="Center"/>
+                <TextBlock Style="{StaticResource CaptionText}"
+                           VerticalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource StatusTextConverter}">
+                            <Binding Path="IsAudioLoaded"/>
+                            <Binding Path="IsProcessing"/>
+                            <Binding Path="IsLoadingAudio"/>
+                            <Binding Path="IsApplyingEffects"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
                 <Border Grid.Column="1" Background="{StaticResource BackgroundTertiary}" 
                         CornerRadius="3" Height="6" 
                         Visibility="{Binding Progress, Converter={StaticResource ProgressToVisibilityConverter}}">

@@ -19,9 +19,6 @@ public partial class SettingsViewModel : ObservableObject
     private string _apiKey = "";
 
     [ObservableProperty]
-    private string _modelName = "gpt-4";
-
-    [ObservableProperty]
     private string _statusMessage = "";
 
     public event EventHandler? SettingsSaved;
@@ -37,7 +34,6 @@ public partial class SettingsViewModel : ObservableObject
         // Load configuration directly from code
         ApiEndpoint = AppConfiguration.AIEndpoint;
         ApiKey = AppConfiguration.AIKey;
-        ModelName = AppConfiguration.AIModel;
     }
 
     [RelayCommand]
@@ -48,8 +44,7 @@ public partial class SettingsViewModel : ObservableObject
             // Save configuration directly to code class
             AppConfiguration.AIEndpoint = ApiEndpoint;
             AppConfiguration.AIKey = ApiKey;
-            AppConfiguration.AIModel = ModelName;
-            
+
             StatusMessage = "Settings saved successfully!";
             
             SettingsSaved?.Invoke(this, EventArgs.Empty);
@@ -87,7 +82,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             StatusMessage = "Testing connection...";
-            var aiService = new AIService(ApiEndpoint, ApiKey, ModelName);
+            var aiService = new AIService(ApiEndpoint, ApiKey);
             
             // Test with a simple prompt - create a minimal test request
             var testFeatures = new AudioFeatures

@@ -14,13 +14,11 @@ public class AIService
     private readonly HttpClient _httpClient;
     private readonly string _apiEndpoint;
     private readonly string? _apiKey;
-    private readonly string _modelName;
 
-    public AIService(string apiEndpoint, string? apiKey = null, string? modelName = null)
+    public AIService(string apiEndpoint, string? apiKey = null)
     {
         _apiEndpoint = apiEndpoint ?? throw new ArgumentNullException(nameof(apiEndpoint));
         _apiKey = apiKey;
-        _modelName = modelName ?? "gpt-4";
         _httpClient = new HttpClient();
         
         if (!string.IsNullOrEmpty(_apiKey))
@@ -74,11 +72,10 @@ public class AIService
         }
         
         // For DigitalOcean agents, model should be "n/a"
-        string model = _modelName;
-        if (endpoint.Contains("ondigitalocean.app") || endpoint.Contains("agents.do-ai.run"))
-        {
-            model = "n/a";
-        }
+        // For other providers, use a default model name
+        string model = (endpoint.Contains("ondigitalocean.app") || endpoint.Contains("agents.do-ai.run"))
+            ? "n/a"
+            : "gpt-4";
         
         var requestBody = new
         {

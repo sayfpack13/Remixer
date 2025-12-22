@@ -5,7 +5,6 @@ public static class AppConfiguration
     // AI Service Configuration
     public static string AIEndpoint { get; set; } = "";
     public static string AIKey { get; set; } = "";
-    public static string AIModel { get; set; } = "gpt-4";
 
     // Initialize with default values or configure here
     static AppConfiguration()
@@ -19,8 +18,6 @@ public static class AppConfiguration
         // Set your API key here (DigitalOcean Agent Access Key)
         AIKey = "DhQWWI8SrHmpRDRksz36OLYRlQTGvyJH";
         
-        // Model name - for DigitalOcean agents, use "n/a" (will be set automatically)
-        AIModel = "n/a";
     }
 }
 
