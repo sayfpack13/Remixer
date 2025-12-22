@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Save Preset" Height="280" Width="450"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource BackgroundPrimary}"
         ResizeMode="NoResize">
     <Window.Resources>
         <ResourceDictionary>
@@ -12,6 +11,9 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
+    <Window.Background>
+        <StaticResource ResourceKey="BackgroundPrimary"/>
+    </Window.Background>
     
     <Border Style="{StaticResource CardBorder}" Margin="20">
         <StackPanel>

@@ -17,9 +17,9 @@ public partial class MainWindow : Window
         try
         {
             InitializeComponent();
-            // Ensure window is visible
+            // Ensure window is visible and maximized
             this.Visibility = Visibility.Visible;
-            this.WindowState = WindowState.Normal;
+            this.WindowState = WindowState.Maximized;
             this.Show();
             this.Activate();
 
@@ -48,6 +48,7 @@ public partial class MainWindow : Window
         if (sender is Slider slider && DataContext is MainViewModel viewModel && viewModel.IsAudioLoaded)
         {
             _isDraggingSeekBar = true;
+            viewModel.SetUserDraggingSlider(true);
             // Update visual position immediately when clicked
             var percentage = e.GetPosition(slider).X / slider.ActualWidth;
             var value = percentage * (slider.Maximum - slider.Minimum) + slider.Minimum;
@@ -80,6 +81,22 @@ public partial class MainWindow : Window
             // Final seek on mouse release
             if (DataContext is MainViewModel viewModel && viewModel.IsAudioLoaded)
             {
+                viewModel.SetUserDraggingSlider(false);
+                viewModel.SeekCommand.Execute(slider.Value);
+            }
+        }
+    }
+    
+    private void SeekBar_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        // Handle case where mouse is released outside the slider
+        if (_isDraggingSeekBar && sender is Slider slider)
+        {
+            _isDraggingSeekBar = false;
+            if (DataContext is MainViewModel viewModel && viewModel.IsAudioLoaded)
+            {
+                viewModel.SetUserDraggingSlider(false);
+                // Still perform seek with current slider value
                 viewModel.SeekCommand.Execute(slider.Value);
             }
         }

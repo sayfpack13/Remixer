@@ -20,7 +20,14 @@ public class EchoEffect : IEffect
         if (!IsEnabled)
             return input;
 
-        _delayBufferSize = (int)(input.WaveFormat.SampleRate * Delay);
+        // Ensure delay is at least a small value to prevent divide by zero
+        var effectiveDelay = Math.Max(Delay, 0.001); // Minimum 1ms delay
+        _delayBufferSize = (int)(input.WaveFormat.SampleRate * effectiveDelay);
+        
+        // Ensure buffer size is at least 1 to prevent divide by zero in modulo operations
+        if (_delayBufferSize < 1)
+            _delayBufferSize = 1;
+            
         _delayBuffer = new float[_delayBufferSize * input.WaveFormat.Channels];
         _writePosition = 0;
 
@@ -56,7 +63,7 @@ public class EchoEffect : IEffect
             double wetLevel = _echo.WetLevel;
             double dryLevel = 1.0 - wetLevel;
 
-            if (_echo._delayBuffer == null)
+            if (_echo._delayBuffer == null || delaySamples == 0 || _echo._delayBufferSize == 0)
                 return samplesRead;
 
             for (int i = 0; i < samplesRead; i += channels)
@@ -72,6 +79,7 @@ public class EchoEffect : IEffect
                     float inputSample = buffer[idx];
                     
                     // Read delayed sample with bounds checking
+                    // _delayBufferSize is guaranteed to be >= 1 from Apply method
                     int readPos = (_echo._writePosition - delaySamples + _echo._delayBufferSize) % _echo._delayBufferSize;
                     int delayReadIdx = readPos * channels + ch;
                     float delayedSample = 0;
@@ -91,6 +99,7 @@ public class EchoEffect : IEffect
                     }
                 }
                 
+                // _delayBufferSize is guaranteed to be >= 1, so modulo is safe
                 _echo._writePosition = (_echo._writePosition + 1) % _echo._delayBufferSize;
             }
 

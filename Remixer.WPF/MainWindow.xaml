@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:Remixer.WPF"
         xmlns:vm="clr-namespace:Remixer.WPF.ViewModels"
         mc:Ignorable="d"
-        Title="Audio Remixer" Height="750" Width="1100"
+        Title="Audio Remixer" 
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <ResourceDictionary>
@@ -59,8 +60,13 @@
                     <Button Content="Load Audio" Command="{Binding LoadAudioCommand}" 
                             Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
                             IsEnabled="{Binding IsLoadingAudio, Converter={StaticResource InvertedBooleanConverter}}"/>
+                    <Button Content="💬 AI Chat" Command="{Binding OpenAIChatCommand}" 
+                            Style="{StaticResource SuccessButton}" Margin="0,0,8,0"
+                            ToolTip="Chat with AI to customize your remix"/>
                     <Button Content="AI Remix" Command="{Binding AIRemixCommand}" 
-                            Style="{StaticResource SuccessButton}" Margin="0,0,8,0"/>
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                            IsEnabled="{Binding IsProcessing, Converter={StaticResource InvertedBooleanConverter}}"
+                            ToolTip="Quick AI remix (one-click)"/>
                     <Button Content="Settings" Command="{Binding OpenSettingsCommand}" 
                             Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                             IsEnabled="{Binding IsProcessing, Converter={StaticResource InvertedBooleanConverter}}"/>
@@ -110,26 +116,33 @@
                                Style="{StaticResource CaptionText}" VerticalAlignment="Center"/>
                 </Grid>
                 
-                <!-- Playback Seek Bar -->
-                <Slider Grid.Row="2" Value="{Binding PlaybackPosition}" Maximum="100"
-                        Style="{StaticResource ModernSeekBar}"
-                        Visibility="{Binding IsApplyingEffects, Converter={StaticResource InvertedBooleanConverter}}"
-                        PreviewMouseLeftButtonDown="SeekBar_PreviewMouseLeftButtonDown"
-                        PreviewMouseMove="SeekBar_PreviewMouseMove"
-                        PreviewMouseUp="SeekBar_PreviewMouseUp"
-                        PreviewKeyDown="SeekBar_PreviewKeyDown"
-                        ToolTip="{Binding CurrentPosition, StringFormat='Current: {0}'}"
-                        Focusable="True"/>
+                <!-- Playback Seek Bar Container with Overlay -->
+                <Grid Grid.Row="2">
+                    <!-- Playback Seek Bar -->
+                    <Slider Value="{Binding PlaybackPosition}" Maximum="100"
+                            Style="{StaticResource ModernSeekBar}"
+                            PreviewMouseLeftButtonDown="SeekBar_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="SeekBar_PreviewMouseMove"
+                            PreviewMouseUp="SeekBar_PreviewMouseUp"
+                            LostMouseCapture="SeekBar_LostMouseCapture"
+                            PreviewKeyDown="SeekBar_PreviewKeyDown"
+                            ToolTip="{Binding CurrentPosition, StringFormat='Current: {0}'}"
+                            Focusable="True"
+                            IsEnabled="{Binding IsApplyingEffects, Converter={StaticResource InvertedBooleanConverter}}"/>
 
-                <!-- Applying Effects Indicator - Replaces Progress Bar -->
-                <Border Grid.Row="2" Background="{StaticResource AccentPrimary}"
-                        CornerRadius="4" Padding="12" Margin="0,0,0,0"
-                        Visibility="{Binding IsApplyingEffects, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="⚡ Applying Effects..." Style="{StaticResource BodyText}"
-                                   Foreground="White" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Border>
+                    <!-- Applying Effects Indicator - Overlay on top of slider -->
+                    <Border Background="{StaticResource AccentPrimary}"
+                            CornerRadius="10" Padding="12,8" 
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Stretch"
+                            Visibility="{Binding IsApplyingEffects, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Panel.ZIndex="10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="⚡ Applying Effects..." Style="{StaticResource BodyText}"
+                                       Foreground="White" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
 
@@ -179,14 +192,40 @@
                         </StackPanel>
                     </Border>
                     
-                    <!-- Processing Indicator -->
+                    <!-- Processing Indicator with Progress -->
                     <Border Background="{StaticResource AccentPrimary}" 
                             CornerRadius="6" Padding="12" Margin="0,12,0,0"
                             Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙️" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Processing..." Style="{StaticResource BodyText}" 
-                                       Foreground="White" VerticalAlignment="Center"/>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="⏳" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                    <DataTrigger.EnterActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard RepeatBehavior="Forever">
+                                                                <DoubleAnimation Storyboard.TargetProperty="(TextBlock.RenderTransform).(RotateTransform.Angle)"
+                                                                                 From="0" To="360" Duration="0:0:1"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </DataTrigger.EnterActions>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding AIStatus}" Style="{StaticResource BodyText}" 
+                                           Foreground="White" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="6" 
+                                        Background="{StaticResource BackgroundTertiary}"
+                                        Foreground="White" BorderThickness="0"
+                                        Visibility="{Binding Progress, Converter={StaticResource ProgressToVisibilityConverter}}"/>
                         </StackPanel>
                     </Border>
                     
@@ -231,7 +270,7 @@
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
                         <StackPanel>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="100"/>
                                     <ColumnDefinition Width="*"/>
@@ -242,12 +281,12 @@
                                 <Slider Grid.Column="1" Minimum="0.5" Maximum="2.0" 
                                         Value="{Binding Settings.Tempo, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                 <TextBlock Text="{Binding Settings.Tempo, StringFormat='{}{0:F2}x'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Style="{StaticResource BodyText}"/>
                             </Grid>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="100"/>
                                     <ColumnDefinition Width="*"/>
@@ -258,7 +297,7 @@
                                 <Slider Grid.Column="1" Minimum="-12" Maximum="12" 
                                         Value="{Binding Settings.Pitch, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                 <TextBlock Text="{Binding Settings.Pitch, StringFormat='{}{0:F0} st'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Style="{StaticResource BodyText}"/>
@@ -274,7 +313,7 @@
                                 <Slider Grid.Column="1" Minimum="0" Maximum="2" 
                                         Value="{Binding Settings.Volume, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                 <TextBlock Text="{Binding Settings.Volume, StringFormat='{}{0:F1}'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Style="{StaticResource BodyText}"/>
@@ -296,7 +335,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,12">
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -307,12 +346,12 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Reverb.RoomSize, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Reverb.RoomSize, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -323,7 +362,7 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Reverb.Damping, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Reverb.Damping, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
@@ -339,7 +378,7 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Reverb.WetLevel, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Reverb.WetLevel, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
@@ -362,7 +401,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,12">
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -373,12 +412,12 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Echo.Delay, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Echo.Delay, StringFormat='{}{0:F2}s'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -389,7 +428,7 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Echo.Feedback, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Echo.Feedback, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
@@ -405,7 +444,7 @@
                                     <Slider Grid.Column="1" Minimum="0" Maximum="1" 
                                             Value="{Binding Settings.Echo.WetLevel, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Echo.WetLevel, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
@@ -430,7 +469,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,12">
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -441,12 +480,12 @@
                                     <Slider Grid.Column="1" Minimum="20" Maximum="500" 
                                             Value="{Binding Settings.Filter.LowCut, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="10" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="10" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Filter.LowCut, StringFormat='{}{0:F0}Hz'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -457,12 +496,12 @@
                                     <Slider Grid.Column="1" Minimum="5000" Maximum="20000" 
                                             Value="{Binding Settings.Filter.HighCut, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="500" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="500" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Filter.HighCut, StringFormat='{}{0:F0}Hz'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="2" Margin="0,0,0,12">
+                                <Grid Grid.Row="2" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -473,12 +512,12 @@
                                     <Slider Grid.Column="1" Minimum="-12" Maximum="12" 
                                             Value="{Binding Settings.Filter.LowGain, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Filter.LowGain, StringFormat='{}{0:F0}dB'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="3" Margin="0,0,0,12">
+                                <Grid Grid.Row="3" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -489,7 +528,7 @@
                                     <Slider Grid.Column="1" Minimum="-12" Maximum="12" 
                                             Value="{Binding Settings.Filter.MidGain, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Filter.MidGain, StringFormat='{}{0:F0}dB'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
@@ -505,7 +544,7 @@
                                     <Slider Grid.Column="1" Minimum="-12" Maximum="12" 
                                             Value="{Binding Settings.Filter.HighGain, UpdateSourceTrigger=PropertyChanged}" 
                                             Style="{StaticResource ModernSlider}"
-                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="12,0"/>
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Filter.HighGain, StringFormat='{}{0:F0}dB'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>

@@ -229,13 +229,180 @@
         </Setter>
     </Style>
     
+    <!-- Slider Thumb Style (defined before ModernSlider) -->
+    <Style x:Key="SliderThumbStyle" TargetType="Thumb">
+        <Setter Property="Background" Value="{StaticResource AccentPrimary}"/>
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Ellipse Fill="{TemplateBinding Background}"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Slider Button Style (for track segments, defined before ModernSlider) -->
+    <Style x:Key="SliderButtonStyle" TargetType="RepeatButton">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderThickness="0"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <!-- Modern Slider Style -->
     <Style x:Key="ModernSlider" TargetType="Slider">
-        <Setter Property="Background" Value="{StaticResource BackgroundTertiary}"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource AccentPrimary}"/>
-        <Setter Property="Height" Value="32"/>
+        <Setter Property="Height" Value="60"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="16,10"/>
+        <Setter Property="Padding" Value="0,14"/>
+        <Setter Property="ClipToBounds" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid ClipToBounds="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto" MinHeight="60"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Tick marks (optional, can be removed if not needed) -->
+                        <TickBar x:Name="TopTick" Grid.Row="0" 
+                                 Fill="{StaticResource TextTertiary}"
+                                 Height="4" 
+                                 Visibility="Collapsed"
+                                 Placement="Top"/>
+                        
+                        <!-- Track -->
+                        <Border Grid.Row="1" 
+                                Background="Transparent"
+                                VerticalAlignment="Center"
+                                Margin="0,12"
+                                Padding="12,0"
+                                ClipToBounds="False">
+                            <Border Background="{StaticResource BackgroundTertiary}"
+                                    BorderBrush="{StaticResource BorderColor}"
+                                    BorderThickness="1"
+                                    CornerRadius="12" 
+                                    Height="16"
+                                    VerticalAlignment="Center"
+                                    ClipToBounds="False">
+                                <Track x:Name="PART_Track" Height="16" VerticalAlignment="Center">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Slider}}">
+                                        <RepeatButton.Style>
+                                            <Style TargetType="RepeatButton" BasedOn="{StaticResource SliderButtonStyle}"/>
+                                        </RepeatButton.Style>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource SliderThumbStyle}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse x:Name="ThumbCircle"
+                                                         Fill="{TemplateBinding Background}"
+                                                         Width="28" Height="28"
+                                                         Stroke="{StaticResource BackgroundPrimary}"
+                                                         StrokeThickness="3"
+                                                         VerticalAlignment="Center"
+                                                         HorizontalAlignment="Center">
+                                                    <Ellipse.Effect>
+                                                        <DropShadowEffect BlurRadius="10" 
+                                                                          ShadowDepth="3" 
+                                                                          Opacity="0.4"
+                                                                          Color="Black"/>
+                                                    </Ellipse.Effect>
+                                                </Ellipse>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Trigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbCircle"
+                                                                                     Storyboard.TargetProperty="Width"
+                                                                                     To="32" Duration="0:0:0.15"/>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbCircle"
+                                                                                     Storyboard.TargetProperty="Height"
+                                                                                     To="32" Duration="0:0:0.15"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.EnterActions>
+                                                        <Trigger.ExitActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbCircle"
+                                                                                     Storyboard.TargetProperty="Width"
+                                                                                     To="28" Duration="0:0:0.15"/>
+                                                                    <DoubleAnimation Storyboard.TargetName="ThumbCircle"
+                                                                                     Storyboard.TargetProperty="Height"
+                                                                                     To="28" Duration="0:0:0.15"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.ExitActions>
+                                                        <Setter TargetName="ThumbCircle" Property="Fill" Value="{StaticResource AccentHover}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbCircle" Property="Width" Value="34"/>
+                                                        <Setter TargetName="ThumbCircle" Property="Height" Value="34"/>
+                                                        <Setter TargetName="ThumbCircle" Property="Fill" Value="{StaticResource AccentPressed}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter TargetName="ThumbCircle" Property="Fill" Value="{StaticResource TextDisabled}"/>
+                                                        <Setter TargetName="ThumbCircle" Property="Opacity" Value="0.5"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge">
+                                        <RepeatButton.Style>
+                                            <Style TargetType="RepeatButton" BasedOn="{StaticResource SliderButtonStyle}">
+                                                <Setter Property="Background" Value="{StaticResource BackgroundTertiary}"/>
+                                            </Style>
+                                        </RepeatButton.Style>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                            </Border>
+                        </Border>
+                        
+                        <!-- Bottom tick marks (optional) -->
+                        <TickBar x:Name="BottomTick" Grid.Row="2" 
+                                 Fill="{StaticResource TextTertiary}"
+                                 Height="4"
+                                 Visibility="Collapsed"
+                                 Placement="Bottom"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.6"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
+    
     
     <!-- Modern CheckBox Style -->
     <Style x:Key="ModernCheckBox" TargetType="CheckBox">
@@ -468,35 +635,87 @@
     </Style>
 
     <Style x:Key="ModernSeekBar" TargetType="Slider">
-        <Setter Property="Height" Value="6"/>
-        <Setter Property="Background" Value="{StaticResource BackgroundTertiary}"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource AccentPrimary}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Minimum" Value="0"/>
         <Setter Property="Maximum" Value="100"/>
         <Setter Property="IsSnapToTickEnabled" Value="False"/>
+        <Setter Property="Margin" Value="0,12"/>
+        <Setter Property="ClipToBounds" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
-                    <Border Background="{TemplateBinding Background}"
-                            CornerRadius="3" Height="6">
-                        <Track x:Name="PART_Track" Height="6">
+                    <Border Background="Transparent"
+                            VerticalAlignment="Center"
+                            Padding="12,0"
+                            ClipToBounds="False">
+                        <Border Background="{StaticResource BackgroundTertiary}"
+                                BorderBrush="{StaticResource BorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="14" Height="18"
+                                VerticalAlignment="Center"
+                                ClipToBounds="False">
+                            <Track x:Name="PART_Track" Height="18" VerticalAlignment="Center">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton Background="{TemplateBinding Foreground}"
                                               BorderThickness="0"
-                                              Command="Slider.DecreaseLarge"/>
+                                              Command="Slider.DecreaseLarge">
+                                    <RepeatButton.Style>
+                                        <Style TargetType="RepeatButton" BasedOn="{StaticResource SliderButtonStyle}"/>
+                                    </RepeatButton.Style>
+                                </RepeatButton>
                             </Track.DecreaseRepeatButton>
                             <Track.Thumb>
                                 <Thumb Background="{TemplateBinding Foreground}"
-                                       Width="12" Height="6"
-                                       BorderThickness="0"/>
+                                       Width="28" Height="28"
+                                       BorderThickness="0"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse x:Name="SeekThumbCircle"
+                                                     Fill="{TemplateBinding Background}"
+                                                     Width="28" Height="28"
+                                                     Stroke="{StaticResource BackgroundPrimary}"
+                                                     StrokeThickness="3"
+                                                     VerticalAlignment="Center"
+                                                     HorizontalAlignment="Center">
+                                                <Ellipse.Effect>
+                                                    <DropShadowEffect BlurRadius="10" 
+                                                                      ShadowDepth="3" 
+                                                                      Opacity="0.4"
+                                                                      Color="Black"/>
+                                                </Ellipse.Effect>
+                                            </Ellipse>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="SeekThumbCircle" Property="Width" Value="32"/>
+                                                    <Setter TargetName="SeekThumbCircle" Property="Height" Value="32"/>
+                                                    <Setter TargetName="SeekThumbCircle" Property="Fill" Value="{StaticResource AccentHover}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsDragging" Value="True">
+                                                    <Setter TargetName="SeekThumbCircle" Property="Width" Value="34"/>
+                                                    <Setter TargetName="SeekThumbCircle" Property="Height" Value="34"/>
+                                                    <Setter TargetName="SeekThumbCircle" Property="Fill" Value="{StaticResource AccentPressed}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Background="{StaticResource BackgroundTertiary}"
                                               BorderThickness="0"
-                                              Command="Slider.IncreaseLarge"/>
+                                              Command="Slider.IncreaseLarge">
+                                    <RepeatButton.Style>
+                                        <Style TargetType="RepeatButton" BasedOn="{StaticResource SliderButtonStyle}"/>
+                                    </RepeatButton.Style>
+                                </RepeatButton>
                             </Track.IncreaseRepeatButton>
                         </Track>
+                        </Border>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

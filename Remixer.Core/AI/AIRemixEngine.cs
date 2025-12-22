@@ -33,25 +33,62 @@ public class AIRemixEngine
             if (audioEngine == null)
                 throw new ArgumentNullException(nameof(audioEngine));
 
+            if (_aiService == null)
+                throw new InvalidOperationException("AI service is not initialized");
+
             // Step 1: Analyze audio (use original file, not processed)
             OnAnalysisProgress("Analyzing audio features...");
             var filePath = audioEngine.CurrentFilePath;
             if (string.IsNullOrEmpty(filePath))
                 throw new InvalidOperationException("No audio file loaded in engine");
             
+            if (!System.IO.File.Exists(filePath))
+                throw new InvalidOperationException($"Audio file not found: {filePath}");
+            
             Logger.Debug($"Analyzing audio file: {filePath}");
-            _lastFeatures = _analyzer.Analyze(filePath);
+            try
+            {
+                // Run audio analysis on background thread to avoid blocking UI
+                _lastFeatures = await Task.Run(() => _analyzer.Analyze(filePath));
+                Logger.Info($"Audio analysis complete: BPM={_lastFeatures.BPM:F1}, Energy={_lastFeatures.Energy:F2}, Duration={_lastFeatures.Duration:F1}s");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to analyze audio", ex);
+                throw new InvalidOperationException($"Audio analysis failed: {ex.Message}", ex);
+            }
+            
             OnAnalysisProgress("Audio analysis complete");
-            Logger.Info($"Audio analysis complete: BPM={_lastFeatures.BPM}, Energy={_lastFeatures.Energy:F2}");
 
             // Step 2: Get AI suggestion
             OnAnalysisProgress("Getting AI remix suggestion...");
-            _lastSuggestion = await _aiService.GetRemixSuggestionAsync(_lastFeatures, userPreference);
+            Logger.Debug("Calling AI service for remix suggestion...");
+            try
+            {
+                _lastSuggestion = await _aiService.GetRemixSuggestionAsync(_lastFeatures, userPreference);
+                Logger.Info($"AI suggestion received. Reasoning: {_lastSuggestion.Reasoning ?? "None"}, Confidence: {_lastSuggestion.Confidence:F2}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to get AI suggestion", ex);
+                throw new InvalidOperationException($"AI service error: {ex.Message}", ex);
+            }
+            
             OnAnalysisProgress("AI suggestion received");
 
             // Step 3: Apply suggestion
             OnAnalysisProgress("Applying remix parameters...");
-            ApplySuggestion(audioEngine, _lastSuggestion);
+            try
+            {
+                ApplySuggestion(audioEngine, _lastSuggestion);
+                Logger.Info($"Applied AI remix settings: Tempo={_lastSuggestion.Settings.Tempo:F2}x, Pitch={_lastSuggestion.Settings.Pitch:F1}st");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to apply AI suggestion", ex);
+                throw new InvalidOperationException($"Failed to apply remix settings: {ex.Message}", ex);
+            }
+            
             OnAnalysisProgress("Remix applied");
 
             OnSuggestionReady(_lastSuggestion);
@@ -64,7 +101,9 @@ public class AIRemixEngine
         }
         catch (Exception ex)
         {
-            Logger.Error("AI remix process failed", ex);
+            sw.Stop();
+            Logger.Error($"AI remix process failed after {sw.ElapsedMilliseconds}ms", ex);
+            OnAnalysisProgress($"Error: {ex.Message}");
             throw;
         }
     }

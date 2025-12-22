@@ -83,6 +83,7 @@ public class AudioFileHandler
         private readonly IWaveProvider _provider;
         private readonly WaveStream _sourceStream;
         private long _position;
+        private long? _cachedLength;
 
         public ResamplerDmoStream(IWaveProvider provider, WaveStream sourceStream)
         {
@@ -92,15 +93,43 @@ public class AudioFileHandler
 
         public override WaveFormat WaveFormat => _provider.WaveFormat;
 
-        public override long Length => _sourceStream.Length; // Use source stream length
+        public override long Length
+        {
+            get
+            {
+                // Calculate length based on the source stream's duration and the new format
+                // Resampling doesn't change duration, only sample rate/channels/format
+                if (!_cachedLength.HasValue)
+                {
+                    var sourceDuration = _sourceStream.TotalTime;
+                    // Calculate length based on duration and the new format's bytes per second
+                    _cachedLength = (long)(sourceDuration.TotalSeconds * WaveFormat.AverageBytesPerSecond);
+                }
+                return _cachedLength.Value;
+            }
+        }
 
         public override long Position
         {
             get => _position;
             set
             {
+                // Convert position from resampled format to source format
+                // Position is in bytes, so we need to convert based on bytes per second ratio
+                if (WaveFormat.AverageBytesPerSecond > 0 && _sourceStream.WaveFormat.AverageBytesPerSecond > 0)
+                {
+                    // Calculate the time position in seconds
+                    double timeInSeconds = (double)value / WaveFormat.AverageBytesPerSecond;
+                    // Convert to source stream position
+                    long sourcePosition = (long)(timeInSeconds * _sourceStream.WaveFormat.AverageBytesPerSecond);
+                    _sourceStream.Position = sourcePosition;
+                }
+                else
+                {
+                    // Fallback: try to set directly (may not work correctly)
+                    _sourceStream.Position = value;
+                }
                 _position = value;
-                _sourceStream.Position = value;
             }
         }
 

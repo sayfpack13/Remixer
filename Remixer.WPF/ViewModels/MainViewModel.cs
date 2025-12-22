@@ -23,6 +23,8 @@ public partial class MainViewModel : ObservableObject
     private readonly PresetManager _presetManager;
     private AIService? _aiService;
     private AIRemixEngine? _aiRemixEngine;
+    private AIChatViewModel? _aiChatViewModel;
+    private Views.AIChatWindow? _aiChatWindow;
     private string? _currentAudioFile;
 
     [ObservableProperty]
@@ -53,6 +55,8 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private double _playbackPosition;
+    
+    private bool _isUserDraggingSlider = false;
 
     [ObservableProperty]
     private ObservableCollection<Preset> _presets = new();
@@ -148,15 +152,45 @@ public partial class MainViewModel : ObservableObject
 
         Application.Current.Dispatcher.Invoke(() =>
         {
-            CurrentPosition = $"{position:mm\\:ss}";
+            // Don't update slider position if user is dragging it
+            if (_isUserDraggingSlider)
+            {
+                return;
+            }
+
+            // Format time display - use hours if needed
+            CurrentPosition = FormatTime(position);
             var total = _audioEngine.TotalTime;
-            TotalDuration = $"{total:mm\\:ss}";
+            TotalDuration = FormatTime(total);
 
             if (total.TotalSeconds > 0)
             {
-                PlaybackPosition = position.TotalSeconds / total.TotalSeconds * 100.0;
+                // Clamp position percentage to 0-100
+                var percentage = position.TotalSeconds / total.TotalSeconds * 100.0;
+                PlaybackPosition = Math.Max(0.0, Math.Min(100.0, percentage));
+            }
+            else
+            {
+                PlaybackPosition = 0;
             }
         });
+    }
+    
+    public void SetUserDraggingSlider(bool isDragging)
+    {
+        _isUserDraggingSlider = isDragging;
+    }
+    
+    private string FormatTime(TimeSpan time)
+    {
+        if (time.TotalHours >= 1)
+        {
+            return $"{(int)time.TotalHours:D2}:{time.Minutes:D2}:{time.Seconds:D2}";
+        }
+        else
+        {
+            return $"{time.Minutes:D2}:{time.Seconds:D2}";
+        }
     }
 
     private void InitializeAIService()
@@ -237,10 +271,15 @@ public partial class MainViewModel : ObservableObject
                 Settings = _audioEngine.Settings;
                 IsAISet = Settings.IsAISet;
                 
-                // Display audio file information
+                // Display audio file information and update position display
                 var duration = _audioEngine.TotalTime;
                 var format = _audioEngine.CurrentFormat;
                 AudioFileInfo = $"Duration: {duration:mm\\:ss} | Format: {format?.Encoding} {format?.BitsPerSample}-bit | Sample Rate: {format?.SampleRate} Hz | Channels: {format?.Channels}";
+                
+                // Initialize position display
+                CurrentPosition = "00:00";
+                TotalDuration = FormatTime(duration);
+                PlaybackPosition = 0;
                 
                 Progress = 100;
                 AIStatus = "Audio loaded successfully";
@@ -298,11 +337,42 @@ public partial class MainViewModel : ObservableObject
                 _audioEngine.Pause();
             }
             
+            // Set processing state immediately to show indicator
             IsProcessing = true;
             AIStatus = "Starting AI remix...";
-            Progress = 0;
+            Progress = 10;
+            
+            // Yield to UI thread to ensure indicator is visible immediately
+            await Task.Yield();
 
-            await _aiRemixEngine.RemixAsync(_audioEngine);
+            // Subscribe to progress updates
+            EventHandler<AnalysisProgressEventArgs>? progressHandler = (s, e) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    AIStatus = e.Message;
+                    // Update progress based on step
+                    if (e.Message.Contains("Analyzing"))
+                        Progress = 30;
+                    else if (e.Message.Contains("Getting AI"))
+                        Progress = 50;
+                    else if (e.Message.Contains("Applying"))
+                        Progress = 80;
+                    else if (e.Message.Contains("complete") || e.Message.Contains("applied"))
+                        Progress = 90;
+                });
+            };
+            
+            _aiRemixEngine.AnalysisProgress += progressHandler;
+
+            try
+            {
+                await _aiRemixEngine.RemixAsync(_audioEngine);
+            }
+            finally
+            {
+                _aiRemixEngine.AnalysisProgress -= progressHandler;
+            }
             
             // Get the new settings from audio engine (clone to decouple UI from engine instance)
             var newSettings = CloneSettings(_audioEngine.Settings);
@@ -333,8 +403,9 @@ public partial class MainViewModel : ObservableObject
             }
             
             // Process audio with new AI settings, preserving position
+            // Run on background thread to avoid blocking UI
             Logger.Debug($"Processing audio after AI remix, preserving position: {currentPosition}");
-            _audioEngine.ProcessAudio(currentPosition);
+            await Task.Run(() => _audioEngine.ProcessAudio(currentPosition));
             
             Progress = 100;
             AIStatus = "AI remix completed";
@@ -365,6 +436,118 @@ public partial class MainViewModel : ObservableObject
     }
     
     private bool CanAIRemix() => IsAudioLoaded && !IsProcessing && !IsLoadingAudio && _aiRemixEngine != null;
+
+    [RelayCommand]
+    private async Task OpenAIChat()
+    {
+        if (_aiService == null)
+        {
+            MessageBox.Show("AI service not configured. Please configure it in Settings.", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!IsAudioLoaded)
+        {
+            MessageBox.Show("Please load an audio file first.", "No Audio Loaded", 
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        // Create or show chat window
+        if (_aiChatWindow == null || !_aiChatWindow.IsLoaded)
+        {
+            if (_aiChatViewModel == null)
+            {
+                _aiChatViewModel = new AIChatViewModel(_aiService, _audioEngine);
+                _aiChatViewModel.RemixSuggestionReady += OnChatRemixSuggestionReady;
+            }
+            
+            _aiChatViewModel.SetAudioLoaded(IsAudioLoaded);
+            _aiChatWindow = new Views.AIChatWindow(_aiChatViewModel);
+            _aiChatWindow.Closed += (s, e) => { _aiChatWindow = null; };
+            
+            // Show window asynchronously to avoid blocking UI
+            _aiChatWindow.Show();
+            
+            // Activate window on next UI frame to ensure it's responsive
+            await Task.Yield();
+            _aiChatWindow.Activate();
+        }
+        else
+        {
+            _aiChatWindow.Activate();
+        }
+    }
+
+    private void OnChatRemixSuggestionReady(object? sender, RemixSuggestion suggestion)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            try
+            {
+                // Save current playback state
+                var wasPlaying = IsPlaying;
+                var currentPosition = _audioEngine.CurrentTime;
+
+                // Pause playback if playing
+                if (wasPlaying)
+                {
+                    _audioEngine.Pause();
+                }
+
+                // Apply the suggestion
+                suggestion.Settings.IsAISet = true;
+                _audioEngine.Settings = suggestion.Settings;
+
+                // Update UI settings
+                var newSettings = CloneSettings(_audioEngine.Settings);
+                _lastAppliedSettingsSnapshot = CloneSettings(newSettings);
+
+                // Unsubscribe from old settings
+                var oldSettings = Settings;
+                if (oldSettings != null)
+                {
+                    oldSettings.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Reverb != null) oldSettings.Reverb.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Echo != null) oldSettings.Echo.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
+                }
+
+                // Update settings
+                Settings = newSettings;
+                IsAISet = Settings.IsAISet;
+                OnPropertyChanged(nameof(Settings));
+
+                // Subscribe to new settings
+                if (Settings != null)
+                {
+                    Settings.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Reverb != null) Settings.Reverb.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Echo != null) Settings.Echo.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
+                }
+
+                // Process audio with new settings
+                _audioEngine.ProcessAudio(currentPosition);
+
+                // Restore playback if it was playing
+                if (wasPlaying)
+                {
+                    _audioEngine.Play();
+                }
+
+                AIStatus = "Remix settings applied from chat";
+                AIReasoning = suggestion.Reasoning ?? "Settings applied from AI chat conversation";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error applying remix suggestion from chat", ex);
+                MessageBox.Show($"Error applying remix settings: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        });
+    }
 
     [RelayCommand(CanExecute = nameof(CanApplyPreset))]
     private void ApplyPreset()

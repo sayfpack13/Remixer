@@ -57,16 +57,24 @@ public class AudioAnalyzer
 
     private float[] ReadAllSamples(ISampleProvider provider)
     {
+        // Limit to first 10 seconds to avoid memory issues with large files
+        const int maxSamples = 44100 * 10; // 10 seconds at 44.1kHz
         var samples = new System.Collections.Generic.List<float>();
         var buffer = new float[8192];
         int samplesRead;
+        int totalSamples = 0;
 
-        while ((samplesRead = provider.Read(buffer, 0, buffer.Length)) > 0)
+        while ((samplesRead = provider.Read(buffer, 0, buffer.Length)) > 0 && totalSamples < maxSamples)
         {
-            for (int i = 0; i < samplesRead; i++)
+            int samplesToAdd = Math.Min(samplesRead, maxSamples - totalSamples);
+            for (int i = 0; i < samplesToAdd; i++)
             {
                 samples.Add(buffer[i]);
             }
+            totalSamples += samplesToAdd;
+            
+            if (totalSamples >= maxSamples)
+                break;
         }
 
         return samples.ToArray();

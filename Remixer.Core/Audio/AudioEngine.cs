@@ -43,7 +43,27 @@ public class AudioEngine : IDisposable
 
     public bool IsPlaying { get; private set; }
     public TimeSpan CurrentTime { get; private set; }
-    public TimeSpan TotalTime => _currentStream?.TotalTime ?? TimeSpan.Zero;
+    public TimeSpan TotalTime
+    {
+        get
+        {
+            if (_currentStream == null)
+                return TimeSpan.Zero;
+            
+            var baseDuration = _currentStream.TotalTime;
+            
+            // Account for tempo changes: tempo affects duration inversely
+            // Tempo 2.0x means audio plays 2x faster, so duration is 1/2
+            // Tempo 0.5x means audio plays 0.5x slower, so duration is 2x
+            var tempo = _settings.Tempo;
+            if (Math.Abs(tempo - 1.0) > 0.01 && tempo > 0)
+            {
+                return TimeSpan.FromSeconds(baseDuration.TotalSeconds / tempo);
+            }
+            
+            return baseDuration;
+        }
+    }
     public WaveFormat? CurrentFormat => _currentStream?.WaveFormat;
     public string? CurrentFilePath => _currentFilePath;
     
@@ -157,7 +177,9 @@ public class AudioEngine : IDisposable
                 IsPlaying = true;
 
                 // Track playback start time and offset
-                _playbackStartTime = DateTime.Now - startPosition; // Adjust start time so position calculation works
+                // Set start time to now, and offset to the desired position
+                // This ensures CurrentTime = _playbackStartOffset + elapsed starts at the correct position
+                _playbackStartTime = DateTime.Now;
                 _playbackStartOffset = startPosition;
                 _initialPlaybackOffset = startPosition;
 
@@ -638,16 +660,17 @@ public class AudioEngine : IDisposable
             _playbackStartOffset = position;
 
             // If currently playing, restart playback from the new position
+            // Keep IsPlaying = true throughout to maintain playing state
             if (IsPlaying && _wavePlayer != null)
             {
                 Logger.Debug("Seeking during playback - restarting from new position");
 
-                // Stop current playback
+                // Stop current playback but maintain playing state
                 _wavePlayer.PlaybackStopped -= OnPlaybackStopped;
                 _wavePlayer.Stop();
                 _wavePlayer.Dispose();
                 _wavePlayer = null;
-                IsPlaying = false;
+                // Don't set IsPlaying = false - keep it true to maintain playing state
                 StopPositionTimer();
 
                 // Start playback from the new position
@@ -656,12 +679,18 @@ public class AudioEngine : IDisposable
                     if (_processedProvider == null)
                     {
                         Logger.Error("Cannot seek - processed provider is null");
+                        // Only set IsPlaying = false if we can't continue
+                        IsPlaying = false;
+                        OnPlaybackStateChanged(PlaybackState.Stopped);
                         return;
                     }
 
                     if (_processedProvider.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
                     {
                         Logger.Error($"Cannot seek - processed provider is not in IEEE Float format: {_processedProvider.WaveFormat.Encoding}");
+                        // Only set IsPlaying = false if we can't continue
+                        IsPlaying = false;
+                        OnPlaybackStateChanged(PlaybackState.Stopped);
                         return;
                     }
 
@@ -678,14 +707,15 @@ public class AudioEngine : IDisposable
                     _wavePlayer.Init(waveProvider);
                     _wavePlayer.Play();
 
-                    IsPlaying = true;
-
+                    // IsPlaying is already true, no need to set it again
                     // Track playback start time and offset
-                    _playbackStartTime = DateTime.Now - position; // Adjust start time so position calculation works
+                    // Set start time to now, and offset to the desired position
+                    // This ensures CurrentTime = _playbackStartOffset + elapsed starts at the correct position
+                    _playbackStartTime = DateTime.Now;
                     _playbackStartOffset = position;
                     _initialPlaybackOffset = position;
 
-                    OnPlaybackStateChanged(PlaybackState.Playing);
+                    // Don't fire PlaybackStateChanged event since we're maintaining playing state
                     StartPositionTimer();
 
                     Logger.Info($"Audio playback restarted from seek position: {position}");
@@ -722,13 +752,23 @@ public class AudioEngine : IDisposable
         var total = TotalTime;
         if (total > TimeSpan.Zero && position >= total)
         {
-            position = total - TimeSpan.FromMilliseconds(50);
-            if (position < TimeSpan.Zero) position = TimeSpan.Zero;
+            // If position is at or beyond total, don't skip - just return source
+            // This prevents trying to skip beyond the end of the stream
+            Logger.Debug($"CreateSkippedProvider: position {position} >= total {total}, returning source without skipping");
+            return source;
         }
 
-        var samplesToSkip = (int)(position.TotalSeconds * source.WaveFormat.SampleRate * source.WaveFormat.Channels);
+        // Calculate samples to skip, but ensure we don't exceed available samples
+        var samplesToSkip = (long)(position.TotalSeconds * source.WaveFormat.SampleRate * source.WaveFormat.Channels);
+        
+        // Clamp to a reasonable maximum to prevent overflow
+        if (samplesToSkip < 0)
+            samplesToSkip = 0;
+        if (samplesToSkip > int.MaxValue)
+            samplesToSkip = int.MaxValue;
+            
         Logger.Debug($"CreateSkippedProvider: position={position}, samplesToSkip={samplesToSkip}");
-        return new OffsetSampleProvider(source, samplesToSkip);
+        return new OffsetSampleProvider(source, (int)samplesToSkip);
     }
 
     private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
@@ -876,6 +916,15 @@ internal class OffsetSampleProvider : ISampleProvider
         while (_samplesSkipped < _samplesToSkip)
         {
             int remainingToSkip = _samplesToSkip - _samplesSkipped;
+            
+            // If we're very close to the target (within 1%), just mark as done
+            // This prevents trying to skip the exact last sample which can cause warnings
+            if (remainingToSkip <= 1 || (_samplesToSkip > 0 && _samplesSkipped >= _samplesToSkip * 0.99))
+            {
+                _samplesSkipped = _samplesToSkip;
+                break;
+            }
+            
             int samplesToReadNow = Math.Min(remainingToSkip, 4096); // Read in chunks
 
             // Read and discard these samples
@@ -884,8 +933,9 @@ internal class OffsetSampleProvider : ISampleProvider
 
             if (actuallyRead == 0)
             {
-                // End of stream reached while skipping - this can happen if position calculation is wrong
-                Logging.Logger.Warning($"OffsetSampleProvider #{_instanceId}: End of stream while skipping! skipped={_samplesSkipped}/{_samplesToSkip}");
+                // End of stream reached while skipping - this can happen if position calculation is slightly off
+                // Just mark as done and continue with playback from current position
+                Logging.Logger.Debug($"OffsetSampleProvider #{_instanceId}: End of stream while skipping (skipped={_samplesSkipped}/{_samplesToSkip}). Starting from current position.");
                 _samplesSkipped = _samplesToSkip; // Mark as done to avoid infinite loop
                 break;
             }
