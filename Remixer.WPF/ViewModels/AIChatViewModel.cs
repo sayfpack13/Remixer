@@ -106,16 +106,49 @@ public partial class AIChatViewModel : ObservableObject
             }).ToList();
             var response = await _aiService.SendChatMessageAsync(fullPrompt, history);
 
-            // Remove typing indicator and add AI response
+            // Remove typing indicator
             Messages.Remove(typingMessage);
-            var aiMessage = AddAIMessage(response);
 
             // Try to parse remix settings from response
             var suggestion = TryParseRemixSuggestion(response);
             if (suggestion != null)
             {
+                Logger.Info($"Parsed remix suggestion from AI chat. Tempo={suggestion.Settings.Tempo:F2}x, Pitch={suggestion.Settings.Pitch:F1}st");
+                
+                // Apply settings immediately
                 RemixSuggestionReady?.Invoke(this, suggestion);
-                AddSystemMessage("Remix settings have been applied! You can continue chatting to refine them.");
+                Logger.Info("RemixSuggestionReady event fired");
+                
+                // Show user-friendly message instead of raw JSON
+                string friendlyMessage;
+                if (!string.IsNullOrWhiteSpace(suggestion.Reasoning))
+                {
+                    // Use the reasoning from the AI if available
+                    friendlyMessage = suggestion.Reasoning;
+                }
+                else
+                {
+                    // Build a friendly message describing the applied settings
+                    var settingsDesc = new System.Text.StringBuilder();
+                    settingsDesc.Append($"Applied remix settings: ");
+                    settingsDesc.Append($"Tempo {suggestion.Settings.Tempo:F2}x");
+                    if (Math.Abs(suggestion.Settings.Pitch) > 0.1)
+                        settingsDesc.Append($", Pitch {suggestion.Settings.Pitch:+0.0;-0.0} semitones");
+                    if (suggestion.Settings.Reverb?.Enabled == true)
+                        settingsDesc.Append(", Reverb enabled");
+                    if (suggestion.Settings.Echo?.Enabled == true)
+                        settingsDesc.Append(", Echo enabled");
+                    if (suggestion.Settings.Filter?.Enabled == true)
+                        settingsDesc.Append(", Filter enabled");
+                    friendlyMessage = settingsDesc.ToString();
+                }
+                
+                AddAIMessage(friendlyMessage);
+            }
+            else
+            {
+                // No JSON found, show the full response as normal conversation
+                AddAIMessage(response);
             }
         }
         catch (Exception ex)
@@ -140,7 +173,12 @@ public partial class AIChatViewModel : ObservableObject
         prompt.AppendLine("User's request:");
         prompt.AppendLine(userMessage);
         prompt.AppendLine();
-        prompt.AppendLine("Respond naturally in conversation. If the user wants to change remix settings, provide your response in JSON format:");
+        prompt.AppendLine("IMPORTANT: When the user requests remix settings or changes, you MUST provide your response in JSON format. Include both:");
+        prompt.AppendLine("1. A natural conversational explanation");
+        prompt.AppendLine("2. A JSON object with the settings (you can wrap it in a code block with ```json ... ```)");
+        prompt.AppendLine();
+        prompt.AppendLine("Required JSON format (include ALL fields even if unchanged):");
+        prompt.AppendLine("```json");
         prompt.AppendLine("{");
         prompt.AppendLine("  \"tempo\": 1.0,");
         prompt.AppendLine("  \"pitch\": 0.0,");
@@ -149,8 +187,9 @@ public partial class AIChatViewModel : ObservableObject
         prompt.AppendLine("  \"filter\": { \"enabled\": false, \"lowCut\": 20.0, \"highCut\": 20000.0, \"lowGain\": 0.0, \"midGain\": 0.0, \"highGain\": 0.0 },");
         prompt.AppendLine("  \"reasoning\": \"Your explanation\"");
         prompt.AppendLine("}");
+        prompt.AppendLine("```");
         prompt.AppendLine();
-        prompt.AppendLine("Otherwise, just chat naturally and help the user understand audio remixing.");
+        prompt.AppendLine("If the user is just asking questions or having a conversation, respond naturally without JSON.");
 
         return prompt.ToString();
     }
@@ -196,14 +235,51 @@ public partial class AIChatViewModel : ObservableObject
     {
         try
         {
-            // Try to extract JSON from response
-            var jsonStart = response.IndexOf('{');
-            var jsonEnd = response.LastIndexOf('}');
+            string? json = null;
             
-            if (jsonStart < 0 || jsonEnd <= jsonStart)
-                return null;
+            // First, try to find JSON in code blocks (```json ... ``` or ``` ... ```)
+            var codeBlockStart = response.IndexOf("```");
+            if (codeBlockStart >= 0)
+            {
+                var codeBlockEnd = response.IndexOf("```", codeBlockStart + 3);
+                if (codeBlockEnd > codeBlockStart)
+                {
+                    var codeBlock = response.Substring(codeBlockStart + 3, codeBlockEnd - codeBlockStart - 3);
+                    // Remove "json" marker if present
+                    codeBlock = codeBlock.TrimStart();
+                    if (codeBlock.StartsWith("json", StringComparison.OrdinalIgnoreCase))
+                        codeBlock = codeBlock.Substring(4).TrimStart();
+                    
+                    // Check if it looks like JSON
+                    if (codeBlock.TrimStart().StartsWith("{"))
+                    {
+                        json = codeBlock.Trim();
+                    }
+                }
+            }
+            
+            // If no code block found, try to extract JSON directly
+            if (string.IsNullOrEmpty(json))
+            {
+                var jsonStart = response.IndexOf('{');
+                var jsonEnd = response.LastIndexOf('}');
+                
+                if (jsonStart < 0 || jsonEnd <= jsonStart)
+                {
+                    Logger.Debug("No JSON found in AI response");
+                    return null;
+                }
 
-            var json = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                json = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+            }
+            
+            if (string.IsNullOrEmpty(json))
+            {
+                Logger.Debug("Failed to extract JSON from response");
+                return null;
+            }
+
+            // Try to parse the JSON
             var doc = System.Text.Json.JsonDocument.Parse(json);
             
             var suggestion = new RemixSuggestion();
@@ -257,10 +333,18 @@ public partial class AIChatViewModel : ObservableObject
             suggestion.Confidence = 0.8;
             suggestion.Settings.IsAISet = true;
             
+            Logger.Info($"Successfully parsed remix suggestion from AI response. Tempo={suggestion.Settings.Tempo:F2}x, Pitch={suggestion.Settings.Pitch:F1}st");
             return suggestion;
         }
-        catch
+        catch (System.Text.Json.JsonException ex)
         {
+            Logger.Warning($"Failed to parse JSON from AI response: {ex.Message}");
+            Logger.Debug($"Response content (first 500 chars): {response.Substring(0, Math.Min(500, response.Length))}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning($"Error parsing remix suggestion: {ex.Message}");
             return null;
         }
     }

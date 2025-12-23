@@ -1,7 +1,7 @@
 <Window x:Class="Remixer.WPF.Views.SavePresetDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Save Preset" Height="280" Width="450"
+        Title="Save Preset" Height="380" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
     <Window.Resources>
@@ -15,46 +15,74 @@
         <StaticResource ResourceKey="BackgroundPrimary"/>
     </Window.Background>
     
-    <Border Style="{StaticResource CardBorder}" Margin="20">
-        <StackPanel>
-            <TextBlock Text="Save Preset" Style="{StaticResource Heading2}" Margin="0,0,0,20"/>
-            
-            <TextBlock Text="Preset Name" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <TextBox x:Name="PresetNameTextBox" 
-                     FontSize="14" 
-                     Padding="12,10"
-                     Background="{StaticResource BackgroundSecondary}"
-                     Foreground="{StaticResource TextPrimary}"
-                     BorderBrush="{StaticResource BorderColor}"
-                     BorderThickness="1"
-                     Margin="0,0,0,16"/>
-            
-            <TextBlock Text="Description (Optional)" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <TextBox x:Name="DescriptionTextBox"
-                     FontSize="13"
-                     Padding="12,10"
-                     TextWrapping="Wrap"
-                     AcceptsReturn="True"
-                     Height="60"
-                     Background="{StaticResource BackgroundSecondary}"
-                     Foreground="{StaticResource TextPrimary}"
-                     BorderBrush="{StaticResource BorderColor}"
-                     BorderThickness="1"
-                     Margin="0,0,0,20"/>
-            
+    <DockPanel Margin="20">
+        <!-- Buttons at bottom -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{StaticResource BackgroundElevated}"
+                Padding="0,16,0,16"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="0,1,0,0"
+                Margin="0,20,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Cancel" 
                         Click="Cancel_Click"
                         Style="{StaticResource SecondaryButton}" 
-                        Width="100" 
-                        Margin="0,0,12,0"/>
+                        MinWidth="110"
+                        Height="38"
+                        Margin="0,0,12,0"
+                        Padding="20,10"
+                        FontSize="13"/>
                 <Button Content="Save" 
                         Click="Save_Click"
                         Style="{StaticResource PrimaryButton}" 
-                        Width="100"/>
+                        MinWidth="110"
+                        Height="38"
+                        Padding="20,10"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        IsDefault="True"/>
             </StackPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+        
+        <!-- Content area -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,4,0">
+            <StackPanel>
+                <!-- Title -->
+                <TextBlock Text="Save Preset" Style="{StaticResource Heading2}" Margin="0,0,0,20"/>
+                
+                <!-- Preset Name Label -->
+                <TextBlock Text="Preset Name" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                
+                <!-- Preset Name Input -->
+                <TextBox x:Name="PresetNameTextBox" 
+                         FontSize="14" 
+                         Padding="12,10"
+                         Background="{StaticResource BackgroundSecondary}"
+                         Foreground="{StaticResource TextPrimary}"
+                         BorderBrush="{StaticResource BorderColor}"
+                         BorderThickness="1"
+                         Margin="0,0,0,20"
+                         Height="40"/>
+                
+                <!-- Description Label -->
+                <TextBlock Text="Description (Optional)" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                
+                <!-- Description Input -->
+                <TextBox x:Name="DescriptionTextBox"
+                         FontSize="13"
+                         Padding="12,10"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         Height="70"
+                         VerticalScrollBarVisibility="Auto"
+                         Background="{StaticResource BackgroundSecondary}"
+                         Foreground="{StaticResource TextPrimary}"
+                         BorderBrush="{StaticResource BorderColor}"
+                         BorderThickness="1"
+                         Margin="0,0,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
 </Window>
 
 

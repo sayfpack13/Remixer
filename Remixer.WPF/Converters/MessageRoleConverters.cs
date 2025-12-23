@@ -13,9 +13,9 @@ public class MessageRoleToBackgroundConverter : IValueConverter
         {
             return role switch
             {
-                "user" => Application.Current.FindResource("AccentPrimary"),
-                "assistant" => Application.Current.FindResource("BackgroundTertiary"),
-                "system" => Application.Current.FindResource("BackgroundSecondary"),
+                "user" => Application.Current.FindResource("AccentPrimary"), // Blue for user messages
+                "assistant" => Application.Current.FindResource("BackgroundElevated"), // Elevated background for AI
+                "system" => Application.Current.FindResource("BackgroundTertiary"), // Tertiary for system messages
                 _ => Application.Current.FindResource("BackgroundSecondary")
             };
         }
@@ -100,6 +100,75 @@ public class InvertedBooleanToVisibilityConverter : IValueConverter
             return boolValue ? Visibility.Collapsed : Visibility.Visible;
         }
         return Visibility.Visible;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class MessageRoleToForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role)
+        {
+            return role switch
+            {
+                "user" => Application.Current.FindResource("TextPrimary"), // White text on blue background
+                "assistant" => Application.Current.FindResource("TextSecondary"), // Light gray on dark background
+                "system" => Application.Current.FindResource("TextTertiary"),
+                _ => Application.Current.FindResource("TextSecondary")
+            };
+        }
+        return Application.Current.FindResource("TextSecondary");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class MessageRoleToTextForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role)
+        {
+            return role switch
+            {
+                "user" => Application.Current.FindResource("TextPrimary"), // White text on blue background
+                "assistant" => Application.Current.FindResource("TextPrimary"), // White text on dark background
+                "system" => Application.Current.FindResource("TextSecondary"),
+                _ => Application.Current.FindResource("TextPrimary")
+            };
+        }
+        return Application.Current.FindResource("TextPrimary");
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class MessageRoleToTimestampForegroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role)
+        {
+            return role switch
+            {
+                "user" => Application.Current.FindResource("TextPrimary"), // White timestamp on blue background
+                "assistant" => Application.Current.FindResource("TextTertiary"), // Gray timestamp on dark background
+                "system" => Application.Current.FindResource("TextTertiary"),
+                _ => Application.Current.FindResource("TextTertiary")
+            };
+        }
+        return Application.Current.FindResource("TextTertiary");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

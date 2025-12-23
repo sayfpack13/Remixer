@@ -324,18 +324,20 @@ public partial class MainViewModel : ObservableObject
         {
             Logger.Info("Starting AI remix");
 
-            // Save current playback state
-            var wasPlaying = IsPlaying;
+            // Save current playback state (but don't pause - keep playing)
+            var wasPlaying = IsPlaying || _audioEngine.IsPlaying;
             var currentPosition = _audioEngine.CurrentTime;
+            var totalDuration = _audioEngine.TotalTime;
             
-            Logger.Debug($"Saved state: wasPlaying={wasPlaying}, position={currentPosition}");
-            
-            // Pause playback if playing
-            if (wasPlaying)
+            // Calculate position as percentage for better preservation across tempo changes
+            double positionPercentage = 0.0;
+            if (totalDuration.TotalSeconds > 0)
             {
-                Logger.Debug("Pausing playback for AI remix");
-                _audioEngine.Pause();
+                positionPercentage = currentPosition.TotalSeconds / totalDuration.TotalSeconds;
+                positionPercentage = Math.Max(0.0, Math.Min(1.0, positionPercentage));
             }
+            
+            Logger.Debug($"Saved state: wasPlaying={wasPlaying}, position={currentPosition} ({positionPercentage:P2})");
             
             // Set processing state immediately to show indicator
             IsProcessing = true;
@@ -367,7 +369,8 @@ public partial class MainViewModel : ObservableObject
 
             try
             {
-                await _aiRemixEngine.RemixAsync(_audioEngine);
+                // Run AI remix on background thread to avoid blocking UI
+                await Task.Run(async () => await _aiRemixEngine.RemixAsync(_audioEngine));
             }
             finally
             {
@@ -402,20 +405,27 @@ public partial class MainViewModel : ObservableObject
                 if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
             }
             
-            // Process audio with new AI settings, preserving position
-            // Run on background thread to avoid blocking UI
-            Logger.Debug($"Processing audio after AI remix, preserving position: {currentPosition}");
-            await Task.Run(() => _audioEngine.ProcessAudio(currentPosition));
+            // Process audio with new AI settings in background, seamlessly transitioning playback
+            // This will smoothly transition to new settings without stopping playback
+            Logger.Debug($"Processing audio after AI remix, preserving position percentage: {positionPercentage:P2}");
+            
+            // Run processing on background thread
+            await Task.Run(() =>
+            {
+                if (wasPlaying)
+                {
+                    // Use ProcessAudioAndPlay to seamlessly transition while maintaining playback
+                    _audioEngine.ProcessAudioAndPlay(positionPercentage);
+                }
+                else
+                {
+                    // If not playing, just process the audio so it's ready when user clicks play
+                    _audioEngine.ProcessAudio();
+                }
+            });
             
             Progress = 100;
             AIStatus = "AI remix completed";
-            
-            // Restore playback if it was playing
-            if (wasPlaying)
-            {
-                Logger.Debug($"Resuming playback from preserved position: {currentPosition}");
-                _audioEngine.Play();
-            }
             
             // Reset progress after a delay
             await Task.Delay(1000);
@@ -486,6 +496,8 @@ public partial class MainViewModel : ObservableObject
         {
             try
             {
+                Logger.Info($"OnChatRemixSuggestionReady called. Tempo={suggestion.Settings.Tempo:F2}x, Pitch={suggestion.Settings.Pitch:F1}st");
+                
                 // Save current playback state
                 var wasPlaying = IsPlaying;
                 var currentPosition = _audioEngine.CurrentTime;
@@ -493,12 +505,14 @@ public partial class MainViewModel : ObservableObject
                 // Pause playback if playing
                 if (wasPlaying)
                 {
+                    Logger.Debug("Pausing playback to apply chat remix settings");
                     _audioEngine.Pause();
                 }
 
                 // Apply the suggestion
                 suggestion.Settings.IsAISet = true;
                 _audioEngine.Settings = suggestion.Settings;
+                Logger.Debug("Applied settings to audio engine");
 
                 // Update UI settings
                 var newSettings = CloneSettings(_audioEngine.Settings);
@@ -528,17 +542,38 @@ public partial class MainViewModel : ObservableObject
                     if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
                 }
 
-                // Process audio with new settings
-                _audioEngine.ProcessAudio(currentPosition);
-
-                // Restore playback if it was playing
-                if (wasPlaying)
+                // Process audio with new settings in background to avoid blocking UI
+                Task.Run(() =>
                 {
-                    _audioEngine.Play();
-                }
-
-                AIStatus = "Remix settings applied from chat";
-                AIReasoning = suggestion.Reasoning ?? "Settings applied from AI chat conversation";
+                    try
+                    {
+                        Logger.Debug($"Processing audio with chat remix settings, preserving position: {currentPosition}");
+                        _audioEngine.ProcessAudio(currentPosition);
+                        
+                        // Restore playback if it was playing
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (wasPlaying)
+                            {
+                                Logger.Debug("Resuming playback after chat remix settings applied");
+                                _audioEngine.Play();
+                            }
+                            
+                            AIStatus = "Remix settings applied from chat";
+                            AIReasoning = suggestion.Reasoning ?? "Settings applied from AI chat conversation";
+                            Logger.Info("Chat remix settings applied successfully");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Error processing audio with chat remix settings", ex);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show($"Error applying remix settings: {ex.Message}", "Error", 
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                        });
+                    }
+                });
             }
             catch (Exception ex)
             {

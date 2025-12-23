@@ -16,6 +16,9 @@
             <local:MessageRoleToAlignmentConverter x:Key="MessageRoleToAlignmentConverter"/>
             <local:MessageRoleToLabelConverter x:Key="MessageRoleToLabelConverter"/>
             <local:MessageRoleToVisibilityConverter x:Key="MessageRoleToVisibilityConverter"/>
+            <local:MessageRoleToForegroundConverter x:Key="MessageRoleToForegroundConverter"/>
+            <local:MessageRoleToTextForegroundConverter x:Key="MessageRoleToTextForegroundConverter"/>
+            <local:MessageRoleToTimestampForegroundConverter x:Key="MessageRoleToTimestampForegroundConverter"/>
             <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <local:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
             <local:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
@@ -35,56 +38,82 @@
 
         <!-- Header -->
         <Border Grid.Row="0" Background="{StaticResource BackgroundElevated}" 
-                CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                CornerRadius="10" Padding="20,16" Margin="0,0,0,16">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15" Color="Black"/>
+            </Border.Effect>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="AI Remix Assistant" Style="{StaticResource Heading1}" Margin="0,0,0,4"/>
+                    <TextBlock Text="AI Remix Assistant" 
+                               Style="{StaticResource Heading1}" 
+                               Margin="0,0,0,6"
+                               FontSize="22"
+                               FontWeight="Bold"/>
                     <TextBlock Text="Chat with AI to customize your audio remix" 
                                Style="{StaticResource CaptionText}" 
-                               Foreground="{StaticResource TextTertiary}"/>
+                               Foreground="{StaticResource TextSecondary}"
+                               FontSize="13"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="Clear Chat" Command="{Binding ClearChatCommand}"
-                        Style="{StaticResource SecondaryButton}" Width="100"/>
+                        Style="{StaticResource SecondaryButton}" 
+                        Padding="16,8"
+                        MinWidth="110"
+                        Height="36"
+                        FontSize="12"/>
             </Grid>
         </Border>
 
         <!-- Chat Messages -->
         <Border Grid.Row="1" Background="{StaticResource BackgroundSecondary}"
-                CornerRadius="8" Padding="12">
+                CornerRadius="8" Padding="16">
             <ScrollViewer VerticalScrollBarVisibility="Auto" 
-                          x:Name="MessagesScrollViewer">
+                          x:Name="MessagesScrollViewer"
+                          HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Messages}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto" MinWidth="200" MaxWidth="500"/>
+                                    <ColumnDefinition Width="Auto" MinWidth="250" MaxWidth="600"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+                                
+                                <!-- User Message (Right Aligned) -->
                                 <Border Grid.Column="1"
                                         Background="{Binding Role, Converter={StaticResource MessageRoleToBackgroundConverter}}"
-                                        CornerRadius="8" Padding="12"
-                                        HorizontalAlignment="{Binding Role, Converter={StaticResource MessageRoleToAlignmentConverter}}">
+                                        CornerRadius="12" 
+                                        Padding="14,12"
+                                        HorizontalAlignment="{Binding Role, Converter={StaticResource MessageRoleToAlignmentConverter}}"
+                                        MaxWidth="600">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15" Color="Black"/>
+                                    </Border.Effect>
                                     <StackPanel>
-                                    <TextBlock Text="{Binding Role, Converter={StaticResource MessageRoleToLabelConverter}}" 
-                                               Style="{StaticResource CaptionText}"
-                                               Foreground="{StaticResource TextTertiary}"
-                                               Margin="0,0,0,4"
-                                               Visibility="{Binding Role, Converter={StaticResource MessageRoleToVisibilityConverter}}"/>
-                                    <TextBlock Text="{Binding Content}" 
-                                               Style="{StaticResource BodyText}"
-                                               TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" 
-                                               Style="{StaticResource CaptionText}"
-                                               Foreground="{StaticResource TextTertiary}"
-                                               Margin="0,4,0,0"
-                                               HorizontalAlignment="Right"
-                                               FontSize="10"/>
+                                        <TextBlock Text="{Binding Role, Converter={StaticResource MessageRoleToLabelConverter}}" 
+                                                   Style="{StaticResource CaptionText}"
+                                                   Foreground="{Binding Role, Converter={StaticResource MessageRoleToForegroundConverter}}"
+                                                   Margin="0,0,0,6"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="11"
+                                                   Visibility="{Binding Role, Converter={StaticResource MessageRoleToVisibilityConverter}}"/>
+                                        <TextBlock Text="{Binding Content}" 
+                                                   Style="{StaticResource BodyText}"
+                                                   TextWrapping="Wrap"
+                                                   LineHeight="22"
+                                                   FontSize="14"
+                                                   Foreground="{Binding Role, Converter={StaticResource MessageRoleToTextForegroundConverter}}"/>
+                                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" 
+                                                   Style="{StaticResource CaptionText}"
+                                                   Foreground="{Binding Role, Converter={StaticResource MessageRoleToTimestampForegroundConverter}}"
+                                                   Margin="0,6,0,0"
+                                                   HorizontalAlignment="Right"
+                                                   FontSize="10"
+                                                   Opacity="0.7"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -95,11 +124,14 @@
         </Border>
 
         <!-- Typing Indicator -->
-        <Border Grid.Row="2" Background="{StaticResource BackgroundTertiary}" 
-                CornerRadius="8" Padding="12" Margin="0,12,0,0"
+        <Border Grid.Row="2" Background="{StaticResource BackgroundElevated}" 
+                CornerRadius="8" Padding="14,12" Margin="0,12,0,0"
                 Visibility="{Binding IsSending, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="⏳" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.1" Color="Black"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="⏳" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>
@@ -117,39 +149,51 @@
                         </Style>
                     </TextBlock.Style>
                     <TextBlock.RenderTransform>
-                        <RotateTransform CenterX="8" CenterY="8"/>
+                        <RotateTransform CenterX="9" CenterY="9"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
-                <TextBlock Text="AI is thinking..." Style="{StaticResource BodyText}" 
-                           Foreground="{StaticResource TextSecondary}"/>
+                <TextBlock Text="AI is thinking..." 
+                           Style="{StaticResource BodyText}" 
+                           Foreground="{StaticResource TextSecondary}"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
 
         <!-- Input Area -->
-        <Grid Grid.Row="3" Margin="0,12,0,0">
+        <Grid Grid.Row="3" Margin="0,16,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{StaticResource BackgroundSecondary}"
+            <Border Grid.Column="0" Background="{StaticResource BackgroundElevated}"
                     BorderBrush="{StaticResource BorderColor}"
                     BorderThickness="1"
-                    CornerRadius="6">
+                    CornerRadius="8">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.1" Color="Black"/>
+                </Border.Effect>
                 <TextBox Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                         FontSize="14" Padding="12,10"
+                         FontSize="14" Padding="14,12"
                          Background="Transparent"
                          Foreground="{StaticResource TextPrimary}"
                          BorderThickness="0"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
-                         VerticalContentAlignment="Center"
-                         MinHeight="40"
-                         MaxHeight="100"
+                         VerticalContentAlignment="Top"
+                         MinHeight="48"
+                         MaxHeight="120"
+                         VerticalScrollBarVisibility="Auto"
                          KeyDown="TextBox_KeyDown"/>
             </Border>
             <Button Grid.Column="1" Content="Send" Command="{Binding SendMessageCommand}"
                     Style="{StaticResource PrimaryButton}" 
-                    Margin="8,0,0,0" Width="80" Height="40"
+                    Margin="12,0,0,0" 
+                    Padding="24,0"
+                    MinWidth="100"
+                    Height="48"
+                    FontSize="14"
+                    FontWeight="SemiBold"
                     IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBooleanConverter}}"/>
         </Grid>
 
