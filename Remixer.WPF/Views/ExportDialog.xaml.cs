@@ -17,20 +17,53 @@ public partial class ExportDialog : Window
         InitializeComponent();
         _defaultFileName = defaultFileName;
         OutputFileTextBox.Text = defaultFileName;
+        FormatComboBox.SelectionChanged += FormatComboBox_SelectionChanged;
     }
 
     private void Browse_Click(object sender, RoutedEventArgs e)
     {
+        // Get selected format
+        var selectedFormat = FormatComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem;
+        var extension = selectedFormat?.Tag?.ToString() ?? ".wav";
+        
+        var filter = extension switch
+        {
+            ".wav" => "WAV Files|*.wav|All Files|*.*",
+            ".mp3" => "MP3 Files|*.mp3|All Files|*.*",
+            ".m4a" => "AAC Files|*.m4a|All Files|*.*",
+            ".wma" => "WMA Files|*.wma|All Files|*.*",
+            _ => "All Files|*.*"
+        };
+        
         var dialog = new SaveFileDialog
         {
-            Filter = "WAV Files|*.wav|All Files|*.*",
+            Filter = filter,
             Title = "Export Remixed Audio",
-            FileName = _defaultFileName
+            FileName = System.IO.Path.ChangeExtension(_defaultFileName, extension)
         };
 
         if (dialog.ShowDialog() == true)
         {
-            OutputFileTextBox.Text = dialog.FileName;
+            var selectedPath = dialog.FileName;
+            // Ensure correct extension
+            if (!selectedPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
+                selectedPath = System.IO.Path.ChangeExtension(selectedPath, extension);
+            }
+            OutputFileTextBox.Text = selectedPath;
+        }
+    }
+    
+    private void FormatComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // Update file extension when format changes
+        if (FormatComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string extension)
+        {
+            var currentPath = OutputFileTextBox.Text;
+            if (!string.IsNullOrEmpty(currentPath))
+            {
+                OutputFileTextBox.Text = System.IO.Path.ChangeExtension(currentPath, extension);
+            }
         }
     }
 

@@ -5,83 +5,118 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Remixer.WPF.ViewModels"
         mc:Ignorable="d"
-        Title="AI Settings" Height="400" Width="600"
+        Title="AI Settings" MinHeight="450" MinWidth="600" Height="500" Width="600"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        Background="{StaticResource BackgroundPrimary}"
+        ResizeMode="CanResize">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/ModernTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Window.DataContext>
         <vm:SettingsViewModel />
     </Window.DataContext>
+    
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <!-- Header -->
-        <TextBlock Grid.Row="0" Text="AI Service Configuration" 
-                   FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
-
-        <!-- Settings Content -->
-        <StackPanel Grid.Row="1">
-            <!-- API Endpoint -->
-            <Grid Margin="0,0,0,15">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="API Endpoint:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                <TextBox Grid.Row="1" Text="{Binding ApiEndpoint}" 
-                         Padding="8" FontSize="12"
-                         ToolTip="Enter your DigitalOcean AI endpoint URL (e.g., https://your-app.ondigitalocean.app/v1/chat/completions)"/>
-            </Grid>
-
-            <!-- API Key -->
-            <Grid Margin="0,0,0,15">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="API Key:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                <PasswordBox x:Name="ApiKeyPasswordBox" 
-                             PasswordChanged="ApiKeyPasswordBox_PasswordChanged"
-                             Padding="8" FontSize="12"
-                             ToolTip="Enter your API key from DigitalOcean"/>
-            </Grid>
-
-            <!-- Info Section -->
-            <Border Background="#F0F0F0" Padding="15" Margin="0,10,0,0" CornerRadius="5">
+        
+        <!-- Scrollable Content Area -->
+        <ScrollViewer Grid.Row="0" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,0,0,16">
+            <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
-                    <TextBlock Text="DigitalOcean Setup Instructions:" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" LineHeight="18">
-                        <Run Text="1. Create an AI agent on DigitalOcean with default instructions for audio remixing"/>
-                        <LineBreak/>
-                        <Run Text="2. Copy the API endpoint URL from your DigitalOcean app"/>
-                        <LineBreak/>
-                        <Run Text="3. Copy the API key from DigitalOcean settings"/>
-                        <LineBreak/>
-                        <Run Text="4. Enter both values above and click Save"/>
-                        <LineBreak/>
-                        <LineBreak/>
-                        <Run Text="Note: The AI agent should be configured with instructions to analyze audio features and return remix parameters in JSON format." FontStyle="Italic"/>
-                    </TextBlock>
+                    <TextBlock Text="AI Service Configuration" Style="{StaticResource Heading2}" Margin="0,0,0,20"/>
+                    
+                    <!-- API Endpoint -->
+                    <TextBlock Text="API Endpoint" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <TextBox Text="{Binding ApiEndpoint}" 
+                             Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,0,16"
+                             ToolTip="Enter your DigitalOcean AI endpoint URL (e.g., https://your-app.ondigitalocean.app/v1/chat/completions)"/>
+                    
+                    <!-- API Key -->
+                    <TextBlock Text="API Key" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <Border Background="{StaticResource BackgroundSecondary}"
+                            BorderBrush="{StaticResource BorderColor}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10"
+                            Margin="0,0,0,16">
+                        <PasswordBox x:Name="ApiKeyPasswordBox" 
+                                     PasswordChanged="ApiKeyPasswordBox_PasswordChanged"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="{StaticResource TextPrimary}"
+                                     FontSize="13"
+                                     Padding="0"
+                                     ToolTip="Enter your API key from DigitalOcean"/>
+                    </Border>
+                    
+                    <!-- Info Section -->
+                    <Border Background="{StaticResource BackgroundElevated}" 
+                            Padding="16" 
+                            Margin="0,8,0,0" 
+                            CornerRadius="8"
+                            BorderBrush="{StaticResource BorderColor}"
+                            BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="DigitalOcean Setup Instructions" 
+                                     Style="{StaticResource Heading3}" 
+                                     Margin="0,0,0,12"/>
+                            <TextBlock TextWrapping="Wrap" 
+                                     Style="{StaticResource BodyText}"
+                                     FontSize="12"
+                                     LineHeight="20">
+                                <Run Text="1. Create an AI agent on DigitalOcean with default instructions for audio remixing"/>
+                                <LineBreak/>
+                                <Run Text="2. Copy the API endpoint URL from your DigitalOcean app"/>
+                                <LineBreak/>
+                                <Run Text="3. Copy the API key from DigitalOcean settings"/>
+                                <LineBreak/>
+                                <Run Text="4. Enter both values above and click Save"/>
+                                <LineBreak/>
+                                <LineBreak/>
+                                <Run Text="Note: The AI agent should be configured with instructions to analyze audio features and return remix parameters in JSON format." 
+                                     FontStyle="Italic"
+                                     Foreground="{StaticResource TextSecondary}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
-        </StackPanel>
-
-        <!-- Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" 
-                    HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button Content="Test Connection" Command="{Binding TestConnectionCommand}" 
-                    Padding="15,8" Margin="0,0,10,0" 
-                    Background="#007ACC" Foreground="White" BorderThickness="0"/>
-            <Button Content="Save" Command="{Binding SaveCommand}" 
-                    Padding="15,8" Margin="0,0,10,0" 
-                    Background="#28A745" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
-            <Button Content="Cancel" Command="{Binding CancelCommand}" 
-                    Padding="15,8" 
-                    Background="#6C757D" Foreground="White" BorderThickness="0"/>
-        </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Fixed Button Bar at Bottom -->
+        <Border Grid.Row="1" 
+                Background="{StaticResource BackgroundElevated}" 
+                Padding="0,16,0,0"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Test Connection" 
+                        Command="{Binding TestConnectionCommand}" 
+                        Style="{StaticResource SecondaryButton}"
+                        Width="130" 
+                        Margin="0,0,12,0"/>
+                <Button Content="Cancel" 
+                        Command="{Binding CancelCommand}" 
+                        Style="{StaticResource SecondaryButton}" 
+                        Width="100" 
+                        Margin="0,0,12,0"/>
+                <Button Content="Save" 
+                        Command="{Binding SaveCommand}" 
+                        Style="{StaticResource PrimaryButton}" 
+                        Width="100"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
 

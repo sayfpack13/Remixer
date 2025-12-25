@@ -248,9 +248,30 @@
 
             <!-- Right Panel - Audio Controls -->
             <ScrollViewer Grid.Column="1" Style="{StaticResource ModernScrollViewer}">
-                <StackPanel>
-                    <!-- No Audio Loaded Message -->
-                    <Border Background="{StaticResource BackgroundSecondary}"
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- No Audio Loaded Message - spans both columns -->
+                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                            Background="{StaticResource BackgroundSecondary}"
                             CornerRadius="6" Padding="16" Margin="0,0,0,16"
                             Visibility="{Binding ShouldShowLoadAudioFirst, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -263,9 +284,8 @@
                         </StackPanel>
                     </Border>
 
-
-                    <!-- Tempo & Pitch -->
-                    <GroupBox Header="Tempo &amp; Pitch" Style="{StaticResource ModernGroupBox}">
+                    <!-- Tempo & Pitch - spans both columns -->
+                    <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Header="Tempo &amp; Pitch" Style="{StaticResource ModernGroupBox}">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -322,7 +342,7 @@
                     </GroupBox>
 
                     <!-- Reverb -->
-                    <GroupBox Header="Reverb" Style="{StaticResource ModernGroupBox}">
+                    <GroupBox Grid.Row="2" Grid.Column="0" Header="Reverb" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -388,7 +408,7 @@
                     </GroupBox>
 
                     <!-- Echo -->
-                    <GroupBox Header="Echo / Delay" Style="{StaticResource ModernGroupBox}">
+                    <GroupBox Grid.Row="2" Grid.Column="1" Header="Echo / Delay" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -454,7 +474,7 @@
                     </GroupBox>
 
                     <!-- Filter / EQ -->
-                    <GroupBox Header="Filter / EQ" Style="{StaticResource ModernGroupBox}">
+                    <GroupBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Header="Filter / EQ" Style="{StaticResource ModernGroupBox}">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -553,8 +573,472 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- AI Indicator -->
-                    <Border Background="{StaticResource AccentPrimary}" Padding="16" Margin="0,0,0,0" CornerRadius="8"
+                    <!-- Tremolo -->
+                    <GroupBox Grid.Row="4" Grid.Column="0" Header="Tremolo" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Tremolo" IsChecked="{Binding Settings.Tremolo.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Tremolo.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Rate" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="10" 
+                                            Value="{Binding Settings.Tremolo.Rate, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Tremolo.Rate, StringFormat='{}{0:F1}Hz'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Tremolo.Depth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Tremolo.Depth, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Compressor -->
+                    <GroupBox Grid.Row="4" Grid.Column="1" Header="Compressor" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Compressor" IsChecked="{Binding Settings.Compressor.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Compressor.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Threshold" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="-60" Maximum="0" 
+                                            Value="{Binding Settings.Compressor.Threshold, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Compressor.Threshold, StringFormat='{}{0:F0}dB'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Ratio" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="20" 
+                                            Value="{Binding Settings.Compressor.Ratio, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Compressor.Ratio, StringFormat='{}{0:F0}:1'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Attack" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="100" 
+                                            Value="{Binding Settings.Compressor.Attack, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Compressor.Attack, StringFormat='{}{0:F1}ms'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="3" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Release" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="10" Maximum="1000" 
+                                            Value="{Binding Settings.Compressor.Release, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="50" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Compressor.Release, StringFormat='{}{0:F0}ms'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Makeup Gain" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="12" 
+                                            Value="{Binding Settings.Compressor.MakeupGain, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Compressor.MakeupGain, StringFormat='{}{0:F0}dB'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Distortion -->
+                    <GroupBox Grid.Row="5" Grid.Column="0" Header="Distortion" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Distortion" IsChecked="{Binding Settings.Distortion.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Distortion.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Drive" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Distortion.Drive, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Distortion.Drive, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Tone" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Distortion.Tone, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Distortion.Tone, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Distortion.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Distortion.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Chorus -->
+                    <GroupBox Grid.Row="5" Grid.Column="1" Header="Chorus" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Chorus" IsChecked="{Binding Settings.Chorus.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Chorus.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Rate" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="5" 
+                                            Value="{Binding Settings.Chorus.Rate, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Chorus.Rate, StringFormat='{}{0:F1}Hz'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Chorus.Depth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Chorus.Depth, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Chorus.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Chorus.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Flanger -->
+                    <GroupBox Grid.Row="6" Grid.Column="0" Header="Flanger" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Flanger" IsChecked="{Binding Settings.Flanger.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Flanger.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Delay" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.001" Maximum="0.02" 
+                                            Value="{Binding Settings.Flanger.Delay, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.001" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Flanger.Delay, StringFormat='{}{0:F3}s'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Rate" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="5" 
+                                            Value="{Binding Settings.Flanger.Rate, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Flanger.Rate, StringFormat='{}{0:F1}Hz'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Flanger.Depth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Flanger.Depth, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="3" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Feedback" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="-1" Maximum="1" 
+                                            Value="{Binding Settings.Flanger.Feedback, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Flanger.Feedback, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Flanger.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Flanger.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Phaser -->
+                    <GroupBox Grid.Row="6" Grid.Column="1" Header="Phaser" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Phaser" IsChecked="{Binding Settings.Phaser.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Phaser.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Rate" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="5" 
+                                            Value="{Binding Settings.Phaser.Rate, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Phaser.Rate, StringFormat='{}{0:F1}Hz'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Phaser.Depth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Phaser.Depth, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Feedback" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="-1" Maximum="1" 
+                                            Value="{Binding Settings.Phaser.Feedback, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Phaser.Feedback, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Phaser.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Phaser.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- AI Indicator - spans both columns -->
+                    <Border Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource AccentPrimary}" Padding="16" Margin="0,0,0,0" CornerRadius="8"
                             Visibility="{Binding IsAISet, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.2"/>
@@ -566,7 +1050,7 @@
                                        Style="{StaticResource CaptionText}" Foreground="#E0E0E0"/>
                         </StackPanel>
                     </Border>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
         </Grid>
 

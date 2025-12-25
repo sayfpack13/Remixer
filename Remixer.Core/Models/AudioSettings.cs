@@ -52,6 +52,12 @@ public class AudioSettings : INotifyPropertyChanged
     public ReverbSettings Reverb { get; set; } = new();
     public EchoSettings Echo { get; set; } = new();
     public FilterSettings Filter { get; set; } = new();
+    public ChorusSettings Chorus { get; set; } = new();
+    public FlangerSettings Flanger { get; set; } = new();
+    public DistortionSettings Distortion { get; set; } = new();
+    public CompressorSettings Compressor { get; set; } = new();
+    public PhaserSettings Phaser { get; set; } = new();
+    public TremoloSettings Tremolo { get; set; } = new();
     
     public bool IsAISet
     {
@@ -290,6 +296,464 @@ public class FilterSettings : INotifyPropertyChanged
             if (_highGain != value)
             {
                 _highGain = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class ChorusSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _rate = 1.0;
+    private double _depth = 0.5;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Rate
+    {
+        get => _rate;
+        set
+        {
+            if (_rate != value)
+            {
+                _rate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Depth
+    {
+        get => _depth;
+        set
+        {
+            if (_depth != value)
+            {
+                _depth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class FlangerSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _delay = 0.005;
+    private double _rate = 0.5;
+    private double _depth = 0.8;
+    private double _feedback = 0.3;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Delay
+    {
+        get => _delay;
+        set
+        {
+            if (_delay != value)
+            {
+                _delay = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Rate
+    {
+        get => _rate;
+        set
+        {
+            if (_rate != value)
+            {
+                _rate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Depth
+    {
+        get => _depth;
+        set
+        {
+            if (_depth != value)
+            {
+                _depth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Feedback
+    {
+        get => _feedback;
+        set
+        {
+            if (_feedback != value)
+            {
+                _feedback = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class DistortionSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _drive = 0.5;
+    private double _tone = 0.5;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Drive
+    {
+        get => _drive;
+        set
+        {
+            if (_drive != value)
+            {
+                _drive = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Tone
+    {
+        get => _tone;
+        set
+        {
+            if (_tone != value)
+            {
+                _tone = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class CompressorSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _threshold = -12.0;
+    private double _ratio = 4.0;
+    private double _attack = 10.0;
+    private double _release = 100.0;
+    private double _makeupGain = 0.0;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Threshold
+    {
+        get => _threshold;
+        set
+        {
+            if (_threshold != value)
+            {
+                _threshold = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Ratio
+    {
+        get => _ratio;
+        set
+        {
+            if (_ratio != value)
+            {
+                _ratio = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Attack
+    {
+        get => _attack;
+        set
+        {
+            if (_attack != value)
+            {
+                _attack = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Release
+    {
+        get => _release;
+        set
+        {
+            if (_release != value)
+            {
+                _release = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double MakeupGain
+    {
+        get => _makeupGain;
+        set
+        {
+            if (_makeupGain != value)
+            {
+                _makeupGain = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class PhaserSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _rate = 0.5;
+    private double _depth = 0.8;
+    private double _feedback = 0.3;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Rate
+    {
+        get => _rate;
+        set
+        {
+            if (_rate != value)
+            {
+                _rate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Depth
+    {
+        get => _depth;
+        set
+        {
+            if (_depth != value)
+            {
+                _depth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Feedback
+    {
+        get => _feedback;
+        set
+        {
+            if (_feedback != value)
+            {
+                _feedback = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class TremoloSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _rate = 3.0;
+    private double _depth = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Rate
+    {
+        get => _rate;
+        set
+        {
+            if (_rate != value)
+            {
+                _rate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Depth
+    {
+        get => _depth;
+        set
+        {
+            if (_depth != value)
+            {
+                _depth = value;
                 OnPropertyChanged();
             }
         }

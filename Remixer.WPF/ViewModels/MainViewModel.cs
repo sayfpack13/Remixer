@@ -389,6 +389,12 @@ public partial class MainViewModel : ObservableObject
                 if (oldSettings.Reverb != null) oldSettings.Reverb.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Echo != null) oldSettings.Echo.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Chorus != null) oldSettings.Chorus.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Flanger != null) oldSettings.Flanger.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Distortion != null) oldSettings.Distortion.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Compressor != null) oldSettings.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Phaser != null) oldSettings.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Tremolo != null) oldSettings.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
             }
             
             // Update settings (UI gets its own instance)
@@ -403,6 +409,12 @@ public partial class MainViewModel : ObservableObject
                 if (Settings.Reverb != null) Settings.Reverb.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Echo != null) Settings.Echo.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Chorus != null) Settings.Chorus.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Flanger != null) Settings.Flanger.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Distortion != null) Settings.Distortion.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Compressor != null) Settings.Compressor.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Phaser != null) Settings.Phaser.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Tremolo != null) Settings.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
             }
             
             // Process audio with new AI settings in background, seamlessly transitioning playback
@@ -526,6 +538,12 @@ public partial class MainViewModel : ObservableObject
                     if (oldSettings.Reverb != null) oldSettings.Reverb.PropertyChanged -= OnSettingsPropertyChanged;
                     if (oldSettings.Echo != null) oldSettings.Echo.PropertyChanged -= OnSettingsPropertyChanged;
                     if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Chorus != null) oldSettings.Chorus.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Flanger != null) oldSettings.Flanger.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Distortion != null) oldSettings.Distortion.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Compressor != null) oldSettings.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Phaser != null) oldSettings.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
+                    if (oldSettings.Tremolo != null) oldSettings.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
                 }
 
                 // Update settings
@@ -540,6 +558,12 @@ public partial class MainViewModel : ObservableObject
                     if (Settings.Reverb != null) Settings.Reverb.PropertyChanged += OnSettingsPropertyChanged;
                     if (Settings.Echo != null) Settings.Echo.PropertyChanged += OnSettingsPropertyChanged;
                     if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Chorus != null) Settings.Chorus.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Flanger != null) Settings.Flanger.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Distortion != null) Settings.Distortion.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Compressor != null) Settings.Compressor.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Phaser != null) Settings.Phaser.PropertyChanged += OnSettingsPropertyChanged;
+                    if (Settings.Tremolo != null) Settings.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
                 }
 
                 // Process audio with new settings in background to avoid blocking UI
@@ -608,6 +632,12 @@ public partial class MainViewModel : ObservableObject
                 if (oldSettings.Reverb != null) oldSettings.Reverb.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Echo != null) oldSettings.Echo.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Filter != null) oldSettings.Filter.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Chorus != null) oldSettings.Chorus.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Flanger != null) oldSettings.Flanger.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Distortion != null) oldSettings.Distortion.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Compressor != null) oldSettings.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Phaser != null) oldSettings.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Tremolo != null) oldSettings.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
             }
 
             // Save current playback state BEFORE any operations
@@ -653,6 +683,52 @@ public partial class MainViewModel : ObservableObject
                     MidGain = SelectedPreset.Settings.Filter.MidGain,
                     HighGain = SelectedPreset.Settings.Filter.HighGain
                 },
+                Chorus = new ChorusSettings
+                {
+                    Enabled = SelectedPreset.Settings.Chorus.Enabled,
+                    Rate = SelectedPreset.Settings.Chorus.Rate,
+                    Depth = SelectedPreset.Settings.Chorus.Depth,
+                    Mix = SelectedPreset.Settings.Chorus.Mix
+                },
+                Flanger = new FlangerSettings
+                {
+                    Enabled = SelectedPreset.Settings.Flanger.Enabled,
+                    Delay = SelectedPreset.Settings.Flanger.Delay,
+                    Rate = SelectedPreset.Settings.Flanger.Rate,
+                    Depth = SelectedPreset.Settings.Flanger.Depth,
+                    Feedback = SelectedPreset.Settings.Flanger.Feedback,
+                    Mix = SelectedPreset.Settings.Flanger.Mix
+                },
+                Distortion = new DistortionSettings
+                {
+                    Enabled = SelectedPreset.Settings.Distortion.Enabled,
+                    Drive = SelectedPreset.Settings.Distortion.Drive,
+                    Tone = SelectedPreset.Settings.Distortion.Tone,
+                    Mix = SelectedPreset.Settings.Distortion.Mix
+                },
+                Compressor = new CompressorSettings
+                {
+                    Enabled = SelectedPreset.Settings.Compressor.Enabled,
+                    Threshold = SelectedPreset.Settings.Compressor.Threshold,
+                    Ratio = SelectedPreset.Settings.Compressor.Ratio,
+                    Attack = SelectedPreset.Settings.Compressor.Attack,
+                    Release = SelectedPreset.Settings.Compressor.Release,
+                    MakeupGain = SelectedPreset.Settings.Compressor.MakeupGain
+                },
+                Phaser = new PhaserSettings
+                {
+                    Enabled = SelectedPreset.Settings.Phaser.Enabled,
+                    Rate = SelectedPreset.Settings.Phaser.Rate,
+                    Depth = SelectedPreset.Settings.Phaser.Depth,
+                    Feedback = SelectedPreset.Settings.Phaser.Feedback,
+                    Mix = SelectedPreset.Settings.Phaser.Mix
+                },
+                Tremolo = new TremoloSettings
+                {
+                    Enabled = SelectedPreset.Settings.Tremolo.Enabled,
+                    Rate = SelectedPreset.Settings.Tremolo.Rate,
+                    Depth = SelectedPreset.Settings.Tremolo.Depth
+                },
                 IsAISet = false
             };
 
@@ -673,6 +749,12 @@ public partial class MainViewModel : ObservableObject
                 if (Settings.Reverb != null) Settings.Reverb.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Echo != null) Settings.Echo.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Filter != null) Settings.Filter.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Chorus != null) Settings.Chorus.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Flanger != null) Settings.Flanger.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Distortion != null) Settings.Distortion.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Compressor != null) Settings.Compressor.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Phaser != null) Settings.Phaser.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Tremolo != null) Settings.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
             }
             
             // Process audio with new settings, preserving the current position
@@ -761,6 +843,52 @@ public partial class MainViewModel : ObservableObject
                             LowGain = Settings.Filter.LowGain,
                             MidGain = Settings.Filter.MidGain,
                             HighGain = Settings.Filter.HighGain
+                        },
+                        Chorus = new ChorusSettings
+                        {
+                            Enabled = Settings.Chorus.Enabled,
+                            Rate = Settings.Chorus.Rate,
+                            Depth = Settings.Chorus.Depth,
+                            Mix = Settings.Chorus.Mix
+                        },
+                        Flanger = new FlangerSettings
+                        {
+                            Enabled = Settings.Flanger.Enabled,
+                            Delay = Settings.Flanger.Delay,
+                            Rate = Settings.Flanger.Rate,
+                            Depth = Settings.Flanger.Depth,
+                            Feedback = Settings.Flanger.Feedback,
+                            Mix = Settings.Flanger.Mix
+                        },
+                        Distortion = new DistortionSettings
+                        {
+                            Enabled = Settings.Distortion.Enabled,
+                            Drive = Settings.Distortion.Drive,
+                            Tone = Settings.Distortion.Tone,
+                            Mix = Settings.Distortion.Mix
+                        },
+                        Compressor = new CompressorSettings
+                        {
+                            Enabled = Settings.Compressor.Enabled,
+                            Threshold = Settings.Compressor.Threshold,
+                            Ratio = Settings.Compressor.Ratio,
+                            Attack = Settings.Compressor.Attack,
+                            Release = Settings.Compressor.Release,
+                            MakeupGain = Settings.Compressor.MakeupGain
+                        },
+                        Phaser = new PhaserSettings
+                        {
+                            Enabled = Settings.Phaser.Enabled,
+                            Rate = Settings.Phaser.Rate,
+                            Depth = Settings.Phaser.Depth,
+                            Feedback = Settings.Phaser.Feedback,
+                            Mix = Settings.Phaser.Mix
+                        },
+                        Tremolo = new TremoloSettings
+                        {
+                            Enabled = Settings.Tremolo.Enabled,
+                            Rate = Settings.Tremolo.Rate,
+                            Depth = Settings.Tremolo.Depth
                         }
                     }
                 };
@@ -820,7 +948,7 @@ public partial class MainViewModel : ObservableObject
     private bool CanDeletePreset() => SelectedPreset != null && SelectedPreset.Category == "Custom";
 
     [RelayCommand(CanExecute = nameof(CanExportAudio))]
-    private void ExportAudio()
+    private async Task ExportAudioAsync()
     {
         if (_audioEngine == null)
         {
@@ -834,6 +962,8 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        Views.ExportProgressDialog? progressDialog = null;
+        
         try
         {
             var defaultFileName = Path.GetFileNameWithoutExtension(_currentAudioFile) + "_remixed.wav";
@@ -846,13 +976,43 @@ public partial class MainViewModel : ObservableObject
             {
                 Logger.Info($"Exporting audio to: {exportDialog.OutputPath} (SR:{exportDialog.SampleRate}, Ch:{exportDialog.Channels}, Bits:{exportDialog.BitsPerSample})");
                 
-                _audioEngine.Export(
+                // Show progress dialog
+                progressDialog = new Views.ExportProgressDialog
+                {
+                    Owner = Application.Current?.MainWindow
+                };
+                progressDialog.Show();
+                
+                // Create progress reporter
+                var progress = new Progress<Remixer.Core.Audio.ExportProgressEventArgs>(args =>
+                {
+                    if (progressDialog != null)
+                    {
+                        if (args.ProgressPercent < 0)
+                        {
+                            progressDialog.SetError(args.Message);
+                        }
+                        else
+                        {
+                            progressDialog.UpdateProgress(args.ProgressPercent, args.Message);
+                        }
+                    }
+                });
+                
+                // Export asynchronously
+                await _audioEngine.ExportAsync(
                     exportDialog.OutputPath,
                     exportDialog.SampleRate,
                     exportDialog.Channels,
-                    exportDialog.BitsPerSample);
+                    exportDialog.BitsPerSample,
+                    progress);
                 
                 Logger.Info("Audio exported successfully");
+                
+                // Close progress dialog
+                progressDialog?.Close();
+                progressDialog = null;
+                
                 MessageBox.Show("Audio exported successfully!", "Success", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -860,8 +1020,18 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Error("Failed to export audio", ex);
-            MessageBox.Show($"Error exporting audio: {ex.Message}", "Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            
+            if (progressDialog != null)
+            {
+                progressDialog.SetError(ex.Message);
+                await Task.Delay(2000); // Show error for 2 seconds
+                progressDialog.Close();
+            }
+            else
+            {
+                MessageBox.Show($"Error exporting audio: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
     
@@ -969,6 +1139,12 @@ public partial class MainViewModel : ObservableObject
             if (oldValue.Reverb != null) oldValue.Reverb.PropertyChanged -= OnSettingsPropertyChanged;
             if (oldValue.Echo != null) oldValue.Echo.PropertyChanged -= OnSettingsPropertyChanged;
             if (oldValue.Filter != null) oldValue.Filter.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Chorus != null) oldValue.Chorus.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Flanger != null) oldValue.Flanger.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Distortion != null) oldValue.Distortion.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Compressor != null) oldValue.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Phaser != null) oldValue.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Tremolo != null) oldValue.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
         }
         
         // Subscribe to new settings
@@ -978,6 +1154,12 @@ public partial class MainViewModel : ObservableObject
             if (newValue.Reverb != null) newValue.Reverb.PropertyChanged += OnSettingsPropertyChanged;
             if (newValue.Echo != null) newValue.Echo.PropertyChanged += OnSettingsPropertyChanged;
             if (newValue.Filter != null) newValue.Filter.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Chorus != null) newValue.Chorus.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Flanger != null) newValue.Flanger.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Distortion != null) newValue.Distortion.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Compressor != null) newValue.Compressor.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Phaser != null) newValue.Phaser.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Tremolo != null) newValue.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
         }
         
         if (!IsProcessing && !IsLoadingAudio)
@@ -1211,6 +1393,52 @@ public partial class MainViewModel : ObservableObject
             Math.Abs(current.Filter.HighGain - newSettings.Filter.HighGain) > 0.1)
             return false;
 
+        // Compare chorus settings
+        if (current.Chorus.Enabled != newSettings.Chorus.Enabled ||
+            Math.Abs(current.Chorus.Rate - newSettings.Chorus.Rate) > 0.01 ||
+            Math.Abs(current.Chorus.Depth - newSettings.Chorus.Depth) > 0.01 ||
+            Math.Abs(current.Chorus.Mix - newSettings.Chorus.Mix) > 0.01)
+            return false;
+
+        // Compare flanger settings
+        if (current.Flanger.Enabled != newSettings.Flanger.Enabled ||
+            Math.Abs(current.Flanger.Delay - newSettings.Flanger.Delay) > 0.001 ||
+            Math.Abs(current.Flanger.Rate - newSettings.Flanger.Rate) > 0.01 ||
+            Math.Abs(current.Flanger.Depth - newSettings.Flanger.Depth) > 0.01 ||
+            Math.Abs(current.Flanger.Feedback - newSettings.Flanger.Feedback) > 0.01 ||
+            Math.Abs(current.Flanger.Mix - newSettings.Flanger.Mix) > 0.01)
+            return false;
+
+        // Compare distortion settings
+        if (current.Distortion.Enabled != newSettings.Distortion.Enabled ||
+            Math.Abs(current.Distortion.Drive - newSettings.Distortion.Drive) > 0.01 ||
+            Math.Abs(current.Distortion.Tone - newSettings.Distortion.Tone) > 0.01 ||
+            Math.Abs(current.Distortion.Mix - newSettings.Distortion.Mix) > 0.01)
+            return false;
+
+        // Compare compressor settings
+        if (current.Compressor.Enabled != newSettings.Compressor.Enabled ||
+            Math.Abs(current.Compressor.Threshold - newSettings.Compressor.Threshold) > 0.1 ||
+            Math.Abs(current.Compressor.Ratio - newSettings.Compressor.Ratio) > 0.1 ||
+            Math.Abs(current.Compressor.Attack - newSettings.Compressor.Attack) > 0.1 ||
+            Math.Abs(current.Compressor.Release - newSettings.Compressor.Release) > 1.0 ||
+            Math.Abs(current.Compressor.MakeupGain - newSettings.Compressor.MakeupGain) > 0.1)
+            return false;
+
+        // Compare phaser settings
+        if (current.Phaser.Enabled != newSettings.Phaser.Enabled ||
+            Math.Abs(current.Phaser.Rate - newSettings.Phaser.Rate) > 0.01 ||
+            Math.Abs(current.Phaser.Depth - newSettings.Phaser.Depth) > 0.01 ||
+            Math.Abs(current.Phaser.Feedback - newSettings.Phaser.Feedback) > 0.01 ||
+            Math.Abs(current.Phaser.Mix - newSettings.Phaser.Mix) > 0.01)
+            return false;
+
+        // Compare tremolo settings
+        if (current.Tremolo.Enabled != newSettings.Tremolo.Enabled ||
+            Math.Abs(current.Tremolo.Rate - newSettings.Tremolo.Rate) > 0.01 ||
+            Math.Abs(current.Tremolo.Depth - newSettings.Tremolo.Depth) > 0.01)
+            return false;
+
         return true;
     }
 
@@ -1245,6 +1473,52 @@ public partial class MainViewModel : ObservableObject
                 LowGain = source.Filter.LowGain,
                 MidGain = source.Filter.MidGain,
                 HighGain = source.Filter.HighGain
+            },
+            Chorus = new ChorusSettings
+            {
+                Enabled = source.Chorus.Enabled,
+                Rate = source.Chorus.Rate,
+                Depth = source.Chorus.Depth,
+                Mix = source.Chorus.Mix
+            },
+            Flanger = new FlangerSettings
+            {
+                Enabled = source.Flanger.Enabled,
+                Delay = source.Flanger.Delay,
+                Rate = source.Flanger.Rate,
+                Depth = source.Flanger.Depth,
+                Feedback = source.Flanger.Feedback,
+                Mix = source.Flanger.Mix
+            },
+            Distortion = new DistortionSettings
+            {
+                Enabled = source.Distortion.Enabled,
+                Drive = source.Distortion.Drive,
+                Tone = source.Distortion.Tone,
+                Mix = source.Distortion.Mix
+            },
+            Compressor = new CompressorSettings
+            {
+                Enabled = source.Compressor.Enabled,
+                Threshold = source.Compressor.Threshold,
+                Ratio = source.Compressor.Ratio,
+                Attack = source.Compressor.Attack,
+                Release = source.Compressor.Release,
+                MakeupGain = source.Compressor.MakeupGain
+            },
+            Phaser = new PhaserSettings
+            {
+                Enabled = source.Phaser.Enabled,
+                Rate = source.Phaser.Rate,
+                Depth = source.Phaser.Depth,
+                Feedback = source.Phaser.Feedback,
+                Mix = source.Phaser.Mix
+            },
+            Tremolo = new TremoloSettings
+            {
+                Enabled = source.Tremolo.Enabled,
+                Rate = source.Tremolo.Rate,
+                Depth = source.Tremolo.Depth
             }
         };
     }

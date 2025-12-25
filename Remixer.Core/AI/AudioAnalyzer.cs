@@ -2,16 +2,67 @@ using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using Remixer.Core.Audio;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Remixer.Core.AI;
 
 public class AudioAnalyzer
 {
+    // Cache for analysis results (key: file path + modification time)
+    private static readonly Dictionary<string, AudioFeatures> _cache = new();
+    private static readonly object _cacheLock = new object();
+    
     public AudioFeatures Analyze(string filePath)
     {
+        // Check cache first
+        var cacheKey = GetCacheKey(filePath);
+        lock (_cacheLock)
+        {
+            if (_cache.TryGetValue(cacheKey, out var cached))
+            {
+                return cached;
+            }
+        }
+        
         using var stream = AudioFileHandler.LoadAudioFile(filePath);
-        return Analyze(stream);
+        var features = Analyze(stream);
+        
+        // Cache the result
+        lock (_cacheLock)
+        {
+            _cache[cacheKey] = features;
+            // Limit cache size to prevent memory issues
+            if (_cache.Count > 10)
+            {
+                var firstKey = _cache.Keys.First();
+                _cache.Remove(firstKey);
+            }
+        }
+        
+        return features;
+    }
+    
+    private static string GetCacheKey(string filePath)
+    {
+        try
+        {
+            var fileInfo = new FileInfo(filePath);
+            return $"{filePath}|{fileInfo.LastWriteTime.Ticks}|{fileInfo.Length}";
+        }
+        catch
+        {
+            return filePath;
+        }
+    }
+    
+    public static void ClearCache()
+    {
+        lock (_cacheLock)
+        {
+            _cache.Clear();
+        }
     }
 
     public AudioFeatures Analyze(WaveStream audioStream)
@@ -57,21 +108,24 @@ public class AudioAnalyzer
 
     private float[] ReadAllSamples(ISampleProvider provider)
     {
-        // Limit to first 10 seconds to avoid memory issues with large files
-        const int maxSamples = 44100 * 10; // 10 seconds at 44.1kHz
-        var samples = new System.Collections.Generic.List<float>();
+        // Limit to first 5 seconds and downsample for faster analysis
+        // Use 22kHz instead of 44kHz for analysis (still accurate enough)
+        const int maxSamples = 22050 * 5; // 5 seconds at 22kHz (downsampled)
+        var samples = new List<float>();
         var buffer = new float[8192];
         int samplesRead;
         int totalSamples = 0;
+        int skipFactor = provider.WaveFormat.SampleRate > 22050 ? 2 : 1; // Downsample if > 22kHz
 
         while ((samplesRead = provider.Read(buffer, 0, buffer.Length)) > 0 && totalSamples < maxSamples)
         {
-            int samplesToAdd = Math.Min(samplesRead, maxSamples - totalSamples);
-            for (int i = 0; i < samplesToAdd; i++)
+            int samplesToAdd = Math.Min(samplesRead / skipFactor, maxSamples - totalSamples);
+            for (int i = 0; i < samplesRead; i += skipFactor)
             {
+                if (totalSamples >= maxSamples) break;
                 samples.Add(buffer[i]);
+                totalSamples++;
             }
-            totalSamples += samplesToAdd;
             
             if (totalSamples >= maxSamples)
                 break;
@@ -82,22 +136,44 @@ public class AudioAnalyzer
 
     private double EstimateBPM(float[] samples, int sampleRate)
     {
-        // Simplified BPM detection using autocorrelation
-        // This is a basic implementation - production would use more sophisticated algorithms
+        // Optimized BPM detection - use fewer samples and larger step size for speed
+        // Limit analysis to reasonable BPM range (60-200 BPM)
         
-        int minPeriod = sampleRate / 4; // 240 BPM max
-        int maxPeriod = sampleRate / 2; // 120 BPM min
+        if (samples.Length < sampleRate) // Need at least 1 second
+            return 120.0; // Default BPM
+        
+        // Use only first 3 seconds for faster analysis
+        int analysisLength = Math.Min(samples.Length, sampleRate * 3);
+        var analysisSamples = new float[analysisLength];
+        Array.Copy(samples, 0, analysisSamples, 0, analysisLength);
+        
+        // Calculate energy envelope (simpler than full autocorrelation)
+        var envelope = new double[analysisLength / 64]; // Downsample envelope
+        for (int i = 0; i < envelope.Length; i++)
+        {
+            double sum = 0;
+            for (int j = 0; j < 64 && (i * 64 + j) < analysisLength; j++)
+            {
+                sum += Math.Abs(analysisSamples[i * 64 + j]);
+            }
+            envelope[i] = sum / 64;
+        }
+        
+        // Find period using autocorrelation on envelope (much faster)
+        int minPeriod = envelope.Length / 4; // ~200 BPM max
+        int maxPeriod = envelope.Length / 2; // ~60 BPM min
         double maxCorrelation = 0;
-        int bestPeriod = sampleRate / 2;
-
-        for (int period = minPeriod; period < maxPeriod && period < samples.Length / 2; period++)
+        int bestPeriod = envelope.Length / 2;
+        
+        // Use step size of 2 for faster search
+        for (int period = minPeriod; period < maxPeriod && period < envelope.Length / 2; period += 2)
         {
             double correlation = 0;
             int count = 0;
 
-            for (int i = 0; i < samples.Length - period; i++)
+            for (int i = 0; i < envelope.Length - period; i++)
             {
-                correlation += samples[i] * samples[i + period];
+                correlation += envelope[i] * envelope[i + period];
                 count++;
             }
 
@@ -112,7 +188,13 @@ public class AudioAnalyzer
             }
         }
 
-        return 60.0 * sampleRate / bestPeriod;
+        // Convert envelope period to BPM
+        // envelope period is in 64-sample blocks, so period * 64 / sampleRate gives seconds per beat
+        double secondsPerBeat = (bestPeriod * 64.0) / sampleRate;
+        double bpm = 60.0 / secondsPerBeat;
+        
+        // Clamp to reasonable range
+        return Math.Max(60, Math.Min(200, bpm));
     }
 
     private double CalculateRMS(float[] samples)

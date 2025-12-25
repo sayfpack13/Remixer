@@ -1,5 +1,6 @@
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using NAudio.MediaFoundation;
 using Remixer.Core.Logging;
 using System;
 using System.IO;
@@ -156,21 +157,155 @@ public class AudioFileHandler
 
     public static void SaveAudioFile(IWaveProvider audioProvider, string outputPath, int sampleRate = 44100, int channels = 2, int bitsPerSample = 16)
     {
+        SaveAudioFileWithProgress(audioProvider, outputPath, sampleRate, channels, bitsPerSample, null, null);
+    }
+    
+    public static void SaveAudioFileWithProgress(IWaveProvider audioProvider, string outputPath, int sampleRate, int channels, int bitsPerSample, 
+        TimeSpan? totalDuration, Action<int, string>? progressCallback)
+    {
         var extension = Path.GetExtension(outputPath).ToLowerInvariant();
         var format = audioProvider.WaveFormat;
 
-        using var writer = extension switch
+        // Initialize MediaFoundation if needed for compressed formats
+        if (extension != ".wav")
         {
-            ".wav" => new WaveFileWriter(outputPath, format),
-            _ => throw new NotSupportedException($"Output format '{extension}' is not supported. Use WAV format.")
-        };
+            try
+            {
+                MediaFoundationApi.Startup();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"MediaFoundation initialization failed: {ex.Message}. Falling back to WAV format.");
+                // Change extension to .wav as fallback
+                var wavPath = Path.ChangeExtension(outputPath, ".wav");
+                Logger.Info($"Exporting as WAV instead: {wavPath}");
+                SaveAudioFileWithProgress(audioProvider, wavPath, sampleRate, channels, bitsPerSample, totalDuration, progressCallback);
+                return;
+            }
+        }
 
+        IDisposable? writer = null;
+        try
+        {
+            if (extension == ".wav")
+            {
+                // WAV format - uncompressed
+                writer = new WaveFileWriter(outputPath, format);
+                WriteAudioData(audioProvider, writer, format, totalDuration, progressCallback);
+            }
+            else
+            {
+                // Compressed formats using MediaFoundation
+                var mediaType = GetMediaTypeForFormat(extension, sampleRate, channels);
+                if (mediaType == null)
+                {
+                    throw new NotSupportedException($"Format '{extension}' is not supported. Supported formats: .wav, .mp3, .m4a, .wma");
+                }
+
+                // Use MediaFoundationEncoder to encode
+                // Create a temporary WAV file first, then encode it
+                var tempWavPath = Path.ChangeExtension(outputPath, ".tmp.wav");
+                try
+                {
+                    // Write to temporary WAV first
+                    using (var tempWriter = new WaveFileWriter(tempWavPath, format))
+                    {
+                        WriteAudioData(audioProvider, tempWriter, format, totalDuration, 
+                            (percent, msg) => progressCallback?.Invoke(percent / 2, $"Preparing audio... {percent}%"));
+                    }
+                    
+                    // Now encode the WAV to target format
+                    progressCallback?.Invoke(50, "Encoding audio...");
+                    using (var reader = new WaveFileReader(tempWavPath))
+                    {
+                        using (var encoder = new MediaFoundationEncoder(mediaType))
+                        {
+                            encoder.Encode(outputPath, reader);
+                        }
+                    }
+                    
+                    // Clean up temp file
+                    File.Delete(tempWavPath);
+                    progressCallback?.Invoke(100, "Encoding complete!");
+                }
+                catch
+                {
+                    // Clean up temp file on error
+                    if (File.Exists(tempWavPath))
+                    {
+                        try { File.Delete(tempWavPath); } catch { }
+                    }
+                    throw;
+                }
+            }
+        }
+        finally
+        {
+            writer?.Dispose();
+        }
+    }
+    
+    private static void WriteAudioData(IWaveProvider audioProvider, IDisposable writer, WaveFormat format, 
+        TimeSpan? totalDuration, Action<int, string>? progressCallback)
+    {
         byte[] buffer = new byte[8192];
         int bytesRead;
+        long totalBytesWritten = 0;
+        long? estimatedTotalBytes = null;
+        
+        // Estimate total bytes if we have duration
+        if (totalDuration.HasValue && format.AverageBytesPerSecond > 0)
+        {
+            estimatedTotalBytes = (long)(totalDuration.Value.TotalSeconds * format.AverageBytesPerSecond);
+        }
 
         while ((bytesRead = audioProvider.Read(buffer, 0, buffer.Length)) > 0)
         {
-            writer.Write(buffer, 0, bytesRead);
+            if (writer is WaveFileWriter waveWriter)
+            {
+                waveWriter.Write(buffer, 0, bytesRead);
+            }
+            totalBytesWritten += bytesRead;
+            
+            // Report progress if callback provided
+            if (progressCallback != null && estimatedTotalBytes.HasValue && estimatedTotalBytes.Value > 0)
+            {
+                int percent = (int)((totalBytesWritten * 100) / estimatedTotalBytes.Value);
+                progressCallback(percent, $"Writing audio... {percent}%");
+            }
+        }
+        
+        if (writer is WaveFileWriter waveWriter2)
+        {
+            waveWriter2.Flush();
+        }
+    }
+    
+    private static MediaType? GetMediaTypeForFormat(string extension, int sampleRate, int channels)
+    {
+        try
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".mp3" => MediaFoundationEncoder.SelectMediaType(
+                    AudioSubtypes.MFAudioFormat_MP3,
+                    new WaveFormat(sampleRate, channels),
+                    sampleRate * channels * 2 * 8), // Bitrate: sampleRate * channels * bitsPerSample
+                ".m4a" or ".aac" => MediaFoundationEncoder.SelectMediaType(
+                    AudioSubtypes.MFAudioFormat_AAC,
+                    new WaveFormat(sampleRate, channels),
+                    sampleRate * channels * 2 * 8),
+                ".wma" => MediaFoundationEncoder.SelectMediaType(
+                    AudioSubtypes.MFAudioFormat_WMAudioV9,
+                    new WaveFormat(sampleRate, channels),
+                    sampleRate * channels * 2 * 8),
+                _ => null
+            };
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning($"Failed to get media type for {extension}: {ex.Message}");
+            return null;
         }
     }
 

@@ -13,6 +13,7 @@ public class AIRemixEngine
     private readonly AIService _aiService;
     private AudioFeatures? _lastFeatures;
     private RemixSuggestion? _lastSuggestion;
+    private string? _lastAnalyzedFilePath;
 
     public AIRemixEngine(AIService aiService)
     {
@@ -37,7 +38,6 @@ public class AIRemixEngine
                 throw new InvalidOperationException("AI service is not initialized");
 
             // Step 1: Analyze audio (use original file, not processed)
-            OnAnalysisProgress("Analyzing audio features...");
             var filePath = audioEngine.CurrentFilePath;
             if (string.IsNullOrEmpty(filePath))
                 throw new InvalidOperationException("No audio file loaded in engine");
@@ -45,20 +45,30 @@ public class AIRemixEngine
             if (!System.IO.File.Exists(filePath))
                 throw new InvalidOperationException($"Audio file not found: {filePath}");
             
-            Logger.Debug($"Analyzing audio file: {filePath}");
-            try
+            // Check if we already have cached analysis for this file
+            if (_lastFeatures != null && _lastAnalyzedFilePath == filePath)
             {
-                // Run audio analysis on background thread to avoid blocking UI
-                _lastFeatures = await Task.Run(() => _analyzer.Analyze(filePath));
-                Logger.Info($"Audio analysis complete: BPM={_lastFeatures.BPM:F1}, Energy={_lastFeatures.Energy:F2}, Duration={_lastFeatures.Duration:F1}s");
+                Logger.Debug("Using cached audio analysis");
+                // Skip progress message for cached results - go straight to AI
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Error("Failed to analyze audio", ex);
-                throw new InvalidOperationException($"Audio analysis failed: {ex.Message}", ex);
+                OnAnalysisProgress("Analyzing audio...");
+                Logger.Debug($"Analyzing audio file: {filePath}");
+                try
+                {
+                    // Run audio analysis on background thread to avoid blocking UI
+                    // The analyzer will check its own cache first
+                    _lastFeatures = await Task.Run(() => _analyzer.Analyze(filePath));
+                    _lastAnalyzedFilePath = filePath;
+                    Logger.Info($"Audio analysis complete: BPM={_lastFeatures.BPM:F1}, Energy={_lastFeatures.Energy:F2}, Duration={_lastFeatures.Duration:F1}s");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Failed to analyze audio", ex);
+                    throw new InvalidOperationException($"Audio analysis failed: {ex.Message}", ex);
+                }
             }
-            
-            OnAnalysisProgress("Audio analysis complete");
 
             // Step 2: Get AI suggestion
             OnAnalysisProgress("Getting AI remix suggestion...");

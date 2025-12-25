@@ -94,6 +94,17 @@ public partial class AIChatViewModel : ObservableObject
 
         try
         {
+            // Ensure we have audio features (use cached if available, otherwise quick analysis)
+            if (_currentFeatures == null)
+            {
+                var filePath = _audioEngine.CurrentFilePath;
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    // Quick analysis in background
+                    _currentFeatures = await Task.Run(() => _audioAnalyzer.Analyze(filePath));
+                }
+            }
+            
             // Build conversation context
             var conversationContext = BuildConversationContext();
             var fullPrompt = BuildChatPrompt(userMessage, conversationContext);
@@ -134,6 +145,18 @@ public partial class AIChatViewModel : ObservableObject
                     settingsDesc.Append($"Tempo {suggestion.Settings.Tempo:F2}x");
                     if (Math.Abs(suggestion.Settings.Pitch) > 0.1)
                         settingsDesc.Append($", Pitch {suggestion.Settings.Pitch:+0.0;-0.0} semitones");
+                    if (suggestion.Settings.Tremolo?.Enabled == true)
+                        settingsDesc.Append(", Tremolo enabled");
+                    if (suggestion.Settings.Compressor?.Enabled == true)
+                        settingsDesc.Append(", Compressor enabled");
+                    if (suggestion.Settings.Distortion?.Enabled == true)
+                        settingsDesc.Append(", Distortion enabled");
+                    if (suggestion.Settings.Chorus?.Enabled == true)
+                        settingsDesc.Append(", Chorus enabled");
+                    if (suggestion.Settings.Flanger?.Enabled == true)
+                        settingsDesc.Append(", Flanger enabled");
+                    if (suggestion.Settings.Phaser?.Enabled == true)
+                        settingsDesc.Append(", Phaser enabled");
                     if (suggestion.Settings.Reverb?.Enabled == true)
                         settingsDesc.Append(", Reverb enabled");
                     if (suggestion.Settings.Echo?.Enabled == true)
@@ -180,8 +203,15 @@ public partial class AIChatViewModel : ObservableObject
         prompt.AppendLine("Required JSON format (include ALL fields even if unchanged):");
         prompt.AppendLine("```json");
         prompt.AppendLine("{");
-        prompt.AppendLine("  \"tempo\": 1.0,");
-        prompt.AppendLine("  \"pitch\": 0.0,");
+        prompt.AppendLine("  \"tempo\": 1.0,  // 0.5 to 2.0");
+        prompt.AppendLine("  \"pitch\": 0.0,  // -12 to 12 semitones");
+        prompt.AppendLine("  \"volume\": 1.0,  // 0.0 to 2.0");
+        prompt.AppendLine("  \"tremolo\": { \"enabled\": false, \"rate\": 3.0, \"depth\": 0.5 },  // Rate: 0.1-10 Hz, Depth: 0-1");
+        prompt.AppendLine("  \"compressor\": { \"enabled\": false, \"threshold\": -12.0, \"ratio\": 4.0, \"attack\": 10.0, \"release\": 100.0, \"makeupGain\": 0.0 },");
+        prompt.AppendLine("  \"distortion\": { \"enabled\": false, \"drive\": 0.5, \"tone\": 0.5, \"mix\": 0.5 },  // All: 0-1");
+        prompt.AppendLine("  \"chorus\": { \"enabled\": false, \"rate\": 1.0, \"depth\": 0.5, \"mix\": 0.5 },  // Rate: 0.1-5 Hz, Depth/Mix: 0-1");
+        prompt.AppendLine("  \"flanger\": { \"enabled\": false, \"delay\": 0.005, \"rate\": 0.5, \"depth\": 0.8, \"feedback\": 0.3, \"mix\": 0.5 },");
+        prompt.AppendLine("  \"phaser\": { \"enabled\": false, \"rate\": 0.5, \"depth\": 0.8, \"feedback\": 0.3, \"mix\": 0.5 },");
         prompt.AppendLine("  \"reverb\": { \"enabled\": true, \"roomSize\": 0.5, \"damping\": 0.5, \"wetLevel\": 0.3 },");
         prompt.AppendLine("  \"echo\": { \"enabled\": false, \"delay\": 0.2, \"feedback\": 0.3, \"wetLevel\": 0.3 },");
         prompt.AppendLine("  \"filter\": { \"enabled\": false, \"lowCut\": 20.0, \"highCut\": 20000.0, \"lowGain\": 0.0, \"midGain\": 0.0, \"highGain\": 0.0 },");
@@ -325,6 +355,83 @@ public partial class AIChatViewModel : ObservableObject
                     suggestion.Settings.Filter.MidGain = midGain.GetDouble();
                 if (filter.TryGetProperty("highGain", out var highGain))
                     suggestion.Settings.Filter.HighGain = highGain.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("volume", out var volume))
+                suggestion.Settings.Volume = volume.GetDouble();
+            
+            if (doc.RootElement.TryGetProperty("tremolo", out var tremolo))
+            {
+                suggestion.Settings.Tremolo.Enabled = tremolo.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (tremolo.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Tremolo.Rate = rate.GetDouble();
+                if (tremolo.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Tremolo.Depth = depth.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("compressor", out var compressor))
+            {
+                suggestion.Settings.Compressor.Enabled = compressor.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (compressor.TryGetProperty("threshold", out var threshold))
+                    suggestion.Settings.Compressor.Threshold = threshold.GetDouble();
+                if (compressor.TryGetProperty("ratio", out var ratio))
+                    suggestion.Settings.Compressor.Ratio = ratio.GetDouble();
+                if (compressor.TryGetProperty("attack", out var attack))
+                    suggestion.Settings.Compressor.Attack = attack.GetDouble();
+                if (compressor.TryGetProperty("release", out var release))
+                    suggestion.Settings.Compressor.Release = release.GetDouble();
+                if (compressor.TryGetProperty("makeupGain", out var makeupGain))
+                    suggestion.Settings.Compressor.MakeupGain = makeupGain.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("distortion", out var distortion))
+            {
+                suggestion.Settings.Distortion.Enabled = distortion.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (distortion.TryGetProperty("drive", out var drive))
+                    suggestion.Settings.Distortion.Drive = drive.GetDouble();
+                if (distortion.TryGetProperty("tone", out var tone))
+                    suggestion.Settings.Distortion.Tone = tone.GetDouble();
+                if (distortion.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Distortion.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("chorus", out var chorus))
+            {
+                suggestion.Settings.Chorus.Enabled = chorus.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (chorus.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Chorus.Rate = rate.GetDouble();
+                if (chorus.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Chorus.Depth = depth.GetDouble();
+                if (chorus.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Chorus.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("flanger", out var flanger))
+            {
+                suggestion.Settings.Flanger.Enabled = flanger.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (flanger.TryGetProperty("delay", out var delay))
+                    suggestion.Settings.Flanger.Delay = delay.GetDouble();
+                if (flanger.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Flanger.Rate = rate.GetDouble();
+                if (flanger.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Flanger.Depth = depth.GetDouble();
+                if (flanger.TryGetProperty("feedback", out var feedback))
+                    suggestion.Settings.Flanger.Feedback = feedback.GetDouble();
+                if (flanger.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Flanger.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("phaser", out var phaser))
+            {
+                suggestion.Settings.Phaser.Enabled = phaser.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (phaser.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Phaser.Rate = rate.GetDouble();
+                if (phaser.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Phaser.Depth = depth.GetDouble();
+                if (phaser.TryGetProperty("feedback", out var feedback))
+                    suggestion.Settings.Phaser.Feedback = feedback.GetDouble();
+                if (phaser.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Phaser.Mix = mix.GetDouble();
             }
             
             if (doc.RootElement.TryGetProperty("reasoning", out var reasoning))

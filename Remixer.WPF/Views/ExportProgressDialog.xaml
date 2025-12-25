@@ -1,0 +1,49 @@
+<Window x:Class="Remixer.WPF.Views.ExportProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Exporting Audio" Height="200" Width="500"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundPrimary}"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/ModernTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Grid.Row="0" 
+                   Text="Exporting audio file..." 
+                   Style="{StaticResource Heading3}" 
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,10"/>
+        
+        <ProgressBar Grid.Row="2" 
+                     x:Name="ProgressBar"
+                     Minimum="0" 
+                     Maximum="100" 
+                     Value="0"
+                     Height="25"
+                     Style="{StaticResource ModernProgressBar}"/>
+        
+        <TextBlock Grid.Row="4" 
+                   x:Name="StatusText"
+                   Text="Initializing..." 
+                   Style="{StaticResource BodyText}"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"/>
+    </Grid>
+</Window>
+

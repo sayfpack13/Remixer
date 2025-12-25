@@ -69,6 +69,7 @@ public class AudioEngine : IDisposable
     
     public event EventHandler<PlaybackStateChangedEventArgs>? PlaybackStateChanged;
     public event EventHandler<TimeSpan>? PositionChanged;
+    public event EventHandler<ExportProgressEventArgs>? ExportProgress;
 
     public void LoadAudio(string filePath)
     {
@@ -327,6 +328,70 @@ public class AudioEngine : IDisposable
         };
         _effects.Add(pitchShifter);
 
+        // Tremolo (amplitude modulation before other effects)
+        var tremolo = new TremoloEffect
+        {
+            IsEnabled = _settings.Tremolo.Enabled,
+            Rate = _settings.Tremolo.Rate,
+            Depth = _settings.Tremolo.Depth
+        };
+        _effects.Add(tremolo);
+
+        // Compressor (dynamic processing)
+        var compressor = new CompressorEffect
+        {
+            IsEnabled = _settings.Compressor.Enabled,
+            Threshold = _settings.Compressor.Threshold,
+            Ratio = _settings.Compressor.Ratio,
+            Attack = _settings.Compressor.Attack,
+            Release = _settings.Compressor.Release,
+            MakeupGain = _settings.Compressor.MakeupGain
+        };
+        _effects.Add(compressor);
+
+        // Distortion (non-linear processing)
+        var distortion = new DistortionEffect
+        {
+            IsEnabled = _settings.Distortion.Enabled,
+            Drive = _settings.Distortion.Drive,
+            Tone = _settings.Distortion.Tone,
+            Mix = _settings.Distortion.Mix
+        };
+        _effects.Add(distortion);
+
+        // Chorus
+        var chorus = new ChorusEffect
+        {
+            IsEnabled = _settings.Chorus.Enabled,
+            Rate = _settings.Chorus.Rate,
+            Depth = _settings.Chorus.Depth,
+            Mix = _settings.Chorus.Mix
+        };
+        _effects.Add(chorus);
+
+        // Flanger
+        var flanger = new FlangerEffect
+        {
+            IsEnabled = _settings.Flanger.Enabled,
+            Delay = _settings.Flanger.Delay,
+            Rate = _settings.Flanger.Rate,
+            Depth = _settings.Flanger.Depth,
+            Feedback = _settings.Flanger.Feedback,
+            Mix = _settings.Flanger.Mix
+        };
+        _effects.Add(flanger);
+
+        // Phaser
+        var phaser = new PhaserEffect
+        {
+            IsEnabled = _settings.Phaser.Enabled,
+            Rate = _settings.Phaser.Rate,
+            Depth = _settings.Phaser.Depth,
+            Feedback = _settings.Phaser.Feedback,
+            Mix = _settings.Phaser.Mix
+        };
+        _effects.Add(phaser);
+
         // Reverb
         var reverb = new ReverbEffect
         {
@@ -384,42 +449,95 @@ public class AudioEngine : IDisposable
         return _processedProvider;
     }
 
-    public void Export(string outputPath, int sampleRate = 44100, int channels = 2, int bitsPerSample = 16)
+    public Task ExportAsync(string outputPath, int sampleRate = 44100, int channels = 2, int bitsPerSample = 16, IProgress<ExportProgressEventArgs>? progress = null)
     {
-        var sw = Stopwatch.StartNew();
-        Logger.Info($"Exporting audio to: {outputPath} (SR:{sampleRate}, Ch:{channels}, Bits:{bitsPerSample})");
-        
-        try
+        return Task.Run(() =>
         {
-            if (_processedProvider == null)
-                throw new InvalidOperationException("No audio loaded");
+            var sw = Stopwatch.StartNew();
+            Logger.Info($"Exporting audio to: {outputPath} (SR:{sampleRate}, Ch:{channels}, Bits:{bitsPerSample})");
+            
+            try
+            {
+                if (_currentFilePath == null)
+                    throw new InvalidOperationException("No audio loaded");
 
-            // Convert to target format
-            var format = new WaveFormat(sampleRate, bitsPerSample, channels);
-            var waveProvider = new SampleToWaveProvider(_processedProvider);
-            
-            // Resample if needed
-            if (waveProvider.WaveFormat.SampleRate != sampleRate || waveProvider.WaveFormat.Channels != channels)
-            {
-                Logger.Debug($"Resampling required: {waveProvider.WaveFormat.SampleRate}Hz -> {sampleRate}Hz");
-                var resampler = new MediaFoundationResampler(waveProvider, format);
-                AudioFileHandler.SaveAudioFile(resampler, outputPath, sampleRate, channels, bitsPerSample);
-                resampler.Dispose();
+                ReportProgress(progress, 0, "Loading audio file...");
+                
+                // For export, we need to reprocess the audio from the original file
+                // This avoids issues with MediaFoundation COM objects that can't be reused after reading
+                Logger.Debug("Reprocessing audio from original file for export");
+                
+                // Reload the original file fresh to avoid COM interface issues
+                using var originalStream = AudioFileHandler.LoadAudioFile(_currentFilePath);
+                var totalDuration = originalStream.TotalTime;
+                
+                ReportProgress(progress, 10, "Processing effects...");
+                
+                // Create sample provider from original stream
+                ISampleProvider sourceProvider = new WaveToSampleProvider(originalStream);
+                
+                // Apply all effects in the same order as playback
+                int effectIndex = 0;
+                int totalEffects = _effects.Count(e => e.IsEnabled);
+                foreach (var effect in _effects.Where(e => e.IsEnabled))
+                {
+                    sourceProvider = effect.Apply(sourceProvider);
+                    effectIndex++;
+                    var progressPercent = 10 + (int)((effectIndex / (double)Math.Max(1, totalEffects)) * 20);
+                    ReportProgress(progress, progressPercent, $"Applying {effect.GetType().Name}...");
+                }
+                
+                ReportProgress(progress, 30, "Converting format...");
+                
+                // Convert to target format
+                var targetFormat = new WaveFormat(sampleRate, bitsPerSample, channels);
+                var waveProvider = new SampleToWaveProvider(sourceProvider);
+                
+                // Resample if needed - use MediaFoundationResampler with fresh stream (avoids COM reuse issues)
+                IWaveProvider finalProvider = waveProvider;
+                if (waveProvider.WaveFormat.SampleRate != sampleRate || waveProvider.WaveFormat.Channels != channels || waveProvider.WaveFormat.BitsPerSample != bitsPerSample)
+                {
+                    Logger.Debug($"Format conversion required: {waveProvider.WaveFormat} -> {targetFormat}");
+                    ReportProgress(progress, 40, "Resampling audio...");
+                    
+                    // Use MediaFoundationResampler - since we're using a fresh stream, this should work
+                    finalProvider = new MediaFoundationResampler(waveProvider, targetFormat);
+                }
+                
+                ReportProgress(progress, 50, "Writing audio file...");
+                
+                // Save with progress reporting
+                AudioFileHandler.SaveAudioFileWithProgress(finalProvider, outputPath, sampleRate, channels, bitsPerSample, totalDuration, 
+                    (percent, message) => ReportProgress(progress, 50 + (int)(percent * 0.5), message));
+                
+                // Dispose if it was a resampler
+                if (finalProvider != waveProvider && finalProvider is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                
+                sw.Stop();
+                Logger.LogPerformance($"Export audio: {System.IO.Path.GetFileName(outputPath)}", sw.ElapsedMilliseconds);
+                Logger.Info("Audio exported successfully");
+                
+                ReportProgress(progress, 100, "Export complete!");
             }
-            else
+            catch (Exception ex)
             {
-                AudioFileHandler.SaveAudioFile(waveProvider, outputPath, sampleRate, channels, bitsPerSample);
+                Logger.Error($"Failed to export audio to: {outputPath}", ex);
+                ReportProgress(progress, -1, $"Error: {ex.Message}");
+                throw;
             }
-            
-            sw.Stop();
-            Logger.LogPerformance($"Export audio: {System.IO.Path.GetFileName(outputPath)}", sw.ElapsedMilliseconds);
-            Logger.Info("Audio exported successfully");
-        }
-        catch (Exception ex)
+        });
+    }
+    
+    private void ReportProgress(IProgress<ExportProgressEventArgs>? progress, int percent, string message)
+    {
+        if (progress != null)
         {
-            Logger.Error($"Failed to export audio to: {outputPath}", ex);
-            throw;
+            progress.Report(new ExportProgressEventArgs(percent, message));
         }
+        ExportProgress?.Invoke(this, new ExportProgressEventArgs(percent, message));
     }
 
     public void Play()
@@ -970,6 +1088,18 @@ public class PlaybackStateChangedEventArgs : EventArgs
     public PlaybackStateChangedEventArgs(PlaybackState state)
     {
         State = state;
+    }
+}
+
+public class ExportProgressEventArgs : EventArgs
+{
+    public int ProgressPercent { get; }
+    public string Message { get; }
+
+    public ExportProgressEventArgs(int progressPercent, string message)
+    {
+        ProgressPercent = progressPercent;
+        Message = message;
     }
 }
 

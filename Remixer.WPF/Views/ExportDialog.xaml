@@ -1,10 +1,10 @@
 <Window x:Class="Remixer.WPF.Views.ExportDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Export Audio" Height="380" Width="500"
+        Title="Export Audio" MinHeight="400" MinWidth="500" Height="450" Width="500"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundPrimary}"
-        ResizeMode="NoResize">
+        ResizeMode="CanResize">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -13,58 +13,99 @@
         </ResourceDictionary>
     </Window.Resources>
     
-    <Border Style="{StaticResource CardBorder}" Margin="20">
-        <StackPanel>
-            <TextBlock Text="Export Audio Settings" Style="{StaticResource Heading2}" Margin="0,0,0,20"/>
-            
-            <TextBlock Text="Sample Rate" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <ComboBox x:Name="SampleRateComboBox" 
-                      Style="{StaticResource ModernComboBox}"
-                      SelectedIndex="1"
-                      Margin="0,0,0,16">
-                <ComboBoxItem Content="22050 Hz (Low Quality)"/>
-                <ComboBoxItem Content="44100 Hz (CD Quality)" IsSelected="True"/>
-                <ComboBoxItem Content="48000 Hz (Pro Audio)"/>
-                <ComboBoxItem Content="96000 Hz (Studio)"/>
-            </ComboBox>
-            
-            <TextBlock Text="Channels" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <ComboBox x:Name="ChannelsComboBox" 
-                      Style="{StaticResource ModernComboBox}"
-                      SelectedIndex="1"
-                      Margin="0,0,0,16">
-                <ComboBoxItem Content="Mono (1 Channel)"/>
-                <ComboBoxItem Content="Stereo (2 Channels)" IsSelected="True"/>
-            </ComboBox>
-            
-            <TextBlock Text="Bit Depth" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <ComboBox x:Name="BitDepthComboBox" 
-                      Style="{StaticResource ModernComboBox}"
-                      SelectedIndex="0"
-                      Margin="0,0,0,16">
-                <ComboBoxItem Content="16-bit (Standard)" IsSelected="True"/>
-                <ComboBoxItem Content="24-bit (High Quality)"/>
-                <ComboBoxItem Content="32-bit (Floating Point)"/>
-            </ComboBox>
-            
-            <TextBlock Text="Output File" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
-            <Grid Margin="0,0,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="OutputFileTextBox"
-                         Style="{StaticResource ModernTextBox}"
-                         IsReadOnly="True"
-                         Grid.Column="0"/>
-                <Button Content="Browse..." 
-                        Click="Browse_Click"
-                        Style="{StaticResource SecondaryButton}" 
-                        Width="100" 
-                        Margin="8,0,0,0"
-                        Grid.Column="1"/>
-            </Grid>
-            
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Scrollable Content Area -->
+        <ScrollViewer Grid.Row="0" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,0,0,16">
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Export Audio Settings" Style="{StaticResource Heading2}" Margin="0,0,0,20"/>
+                    
+                    <TextBlock Text="Sample Rate" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="SampleRateComboBox" 
+                              Style="{StaticResource ModernComboBox}"
+                              SelectedIndex="1"
+                              Margin="0,0,0,16">
+                        <ComboBoxItem Content="22050 Hz (Low Quality)"/>
+                        <ComboBoxItem Content="44100 Hz (CD Quality)" IsSelected="True"/>
+                        <ComboBoxItem Content="48000 Hz (Pro Audio)"/>
+                        <ComboBoxItem Content="96000 Hz (Studio)"/>
+                    </ComboBox>
+                    
+                    <TextBlock Text="Channels" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="ChannelsComboBox" 
+                              Style="{StaticResource ModernComboBox}"
+                              SelectedIndex="1"
+                              Margin="0,0,0,16">
+                        <ComboBoxItem Content="Mono (1 Channel)"/>
+                        <ComboBoxItem Content="Stereo (2 Channels)" IsSelected="True"/>
+                    </ComboBox>
+                    
+                    <TextBlock Text="Bit Depth" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="BitDepthComboBox" 
+                              Style="{StaticResource ModernComboBox}"
+                              SelectedIndex="0"
+                              Margin="0,0,0,16">
+                        <ComboBoxItem Content="16-bit (Standard)" IsSelected="True"/>
+                        <ComboBoxItem Content="24-bit (High Quality)"/>
+                        <ComboBoxItem Content="32-bit (Floating Point)"/>
+                    </ComboBox>
+                    
+                    <TextBlock Text="Output Format" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="FormatComboBox" 
+                              Style="{StaticResource ModernComboBox}"
+                              SelectedIndex="0"
+                              Margin="0,0,0,16">
+                        <ComboBoxItem Content="WAV (Uncompressed - Best Quality)" Tag=".wav" IsSelected="True"/>
+                        <ComboBoxItem Content="MP3 (Compressed - Small File Size)" Tag=".mp3"/>
+                        <ComboBoxItem Content="AAC (Compressed - Good Quality)" Tag=".m4a"/>
+                        <ComboBoxItem Content="WMA (Windows Media Audio)" Tag=".wma"/>
+                    </ComboBox>
+                    
+                    <TextBlock Text="Output File" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="OutputFileTextBox"
+                                 Style="{StaticResource ModernTextBox}"
+                                 IsReadOnly="True"
+                                 Grid.Column="0"/>
+                        <Button Content="Browse..." 
+                                Click="Browse_Click"
+                                Style="{StaticResource SecondaryButton}" 
+                                Width="100" 
+                                Margin="8,0,0,0"
+                                Grid.Column="1"/>
+                    </Grid>
+                    
+                    <TextBlock TextWrapping="Wrap" 
+                               Style="{StaticResource BodyText}" 
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondary}"
+                               Margin="0,8,0,0">
+                        <Run Text="WAV: Uncompressed, best quality, large file size. "/>
+                        <Run Text="MP3/AAC/WMA: Compressed, smaller file size, good quality. "/>
+                        <Run Text="All formats are widely compatible."/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+        
+        <!-- Fixed Button Bar at Bottom -->
+        <Border Grid.Row="1" 
+                Background="{StaticResource BackgroundElevated}" 
+                Padding="0,16,0,0"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Cancel" 
                         Click="Cancel_Click"
@@ -76,8 +117,8 @@
                         Style="{StaticResource PrimaryButton}" 
                         Width="100"/>
             </StackPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+    </Grid>
 </Window>
 
 
