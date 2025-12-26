@@ -11,13 +11,35 @@ public partial class ExportDialog : Window
     public string OutputPath { get; private set; } = string.Empty;
 
     private readonly string _defaultFileName;
+    private readonly string _defaultFormat;
 
-    public ExportDialog(string defaultFileName)
+    public ExportDialog(string defaultFileName, string defaultFormat = ".wav")
     {
         InitializeComponent();
         _defaultFileName = defaultFileName;
+        _defaultFormat = defaultFormat;
         OutputFileTextBox.Text = defaultFileName;
         FormatComboBox.SelectionChanged += FormatComboBox_SelectionChanged;
+        
+        // Auto-select format based on default format
+        AutoSelectFormat(defaultFormat);
+    }
+    
+    private void AutoSelectFormat(string format)
+    {
+        // Find and select the matching format in the combo box
+        for (int i = 0; i < FormatComboBox.Items.Count; i++)
+        {
+            if (FormatComboBox.Items[i] is System.Windows.Controls.ComboBoxItem item)
+            {
+                var tag = item.Tag?.ToString() ?? "";
+                if (string.Equals(tag, format, StringComparison.OrdinalIgnoreCase))
+                {
+                    FormatComboBox.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     private void Browse_Click(object sender, RoutedEventArgs e)

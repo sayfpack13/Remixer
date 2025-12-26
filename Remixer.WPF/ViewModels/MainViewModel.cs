@@ -1034,8 +1034,26 @@ public partial class MainViewModel : ObservableObject
         
         try
         {
-            var defaultFileName = Path.GetFileNameWithoutExtension(_currentAudioFile) + "_remixed.wav";
-            var exportDialog = new Views.ExportDialog(defaultFileName)
+            // Stop/pause audio playback before exporting to keep the process clean
+            var wasPlaying = IsPlaying;
+            if (wasPlaying)
+            {
+                Logger.Debug("Stopping audio playback before export");
+                _audioEngine?.Stop();
+            }
+            
+            // Determine default format based on loaded audio file
+            var sourceExtension = Path.GetExtension(_currentAudioFile)?.ToLowerInvariant() ?? ".wav";
+            var defaultFormat = sourceExtension switch
+            {
+                ".mp3" => ".mp3",
+                ".m4a" => ".m4a",
+                ".wma" => ".wma",
+                _ => ".wav" // Default to WAV for unknown formats
+            };
+            
+            var defaultFileName = Path.GetFileNameWithoutExtension(_currentAudioFile) + "_remixed" + defaultFormat;
+            var exportDialog = new Views.ExportDialog(defaultFileName, defaultFormat)
             {
                 Owner = Application.Current?.MainWindow
             };
@@ -1068,12 +1086,19 @@ public partial class MainViewModel : ObservableObject
                 });
                 
                 // Export asynchronously
-                await _audioEngine.ExportAsync(
-                    exportDialog.OutputPath,
-                    exportDialog.SampleRate,
-                    exportDialog.Channels,
-                    exportDialog.BitsPerSample,
-                    progress);
+                if (_audioEngine != null)
+                {
+                    await _audioEngine.ExportAsync(
+                        exportDialog.OutputPath,
+                        exportDialog.SampleRate,
+                        exportDialog.Channels,
+                        exportDialog.BitsPerSample,
+                        progress);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Audio engine is not available");
+                }
                 
                 Logger.Info("Audio exported successfully");
                 
@@ -1083,6 +1108,11 @@ public partial class MainViewModel : ObservableObject
                 
                 MessageBox.Show("Audio exported successfully!", "Success", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                // User cancelled export - playback was already stopped, no need to restore
+                Logger.Debug("Export cancelled by user");
             }
         }
         catch (Exception ex)
