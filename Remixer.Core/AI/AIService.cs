@@ -63,7 +63,7 @@ public class AIService
     
     private static readonly Random _random = new Random();
     
-    private RemixSuggestion CreateDefaultSuggestion(AudioFeatures features)
+    public RemixSuggestion CreateDefaultSuggestion(AudioFeatures features)
     {
         // Create an intelligent remix suggestion based on audio features
         // Uses musical knowledge to create coherent, genre-appropriate combinations
@@ -85,14 +85,18 @@ public class AIService
         // Slow BPM: Reverb + Echo for depth
         
         bool enableReverb = true; // Reverb is almost always beneficial
-        bool enableCompressor = isHighEnergy || isFastBPM || isElectronic; // Essential for punchy tracks
-        bool enableChorus = isMidEnergy || isElectronic || random.NextDouble() > 0.4; // Good for width
-        bool enableFlanger = isElectronic && random.NextDouble() > 0.5; // Electronic flavor
-        bool enablePhaser = isElectronic && random.NextDouble() > 0.6; // Psychedelic effect
-        bool enableDistortion = isHighEnergy && (isElectronic || random.NextDouble() > 0.6); // Grit for high energy
-        bool enableTremolo = isFastBPM && random.NextDouble() > 0.5; // Rhythmic variation
-        bool enableEcho = isSlowBPM || !isHighEnergy || random.NextDouble() > 0.5; // Depth for slower tracks
-        bool enableFilter = isElectronic && random.NextDouble() > 0.6; // EQ shaping for electronic
+        bool enableCompressor = isHighEnergy || isFastBPM || isElectronic || random.NextDouble() > 0.3; // Essential for punchy tracks, but also useful for others
+        bool enableChorus = isMidEnergy || isElectronic || random.NextDouble() > 0.3; // Good for width - more likely
+        bool enableFlanger = isElectronic ? random.NextDouble() > 0.3 : random.NextDouble() > 0.5; // Electronic flavor, but can work elsewhere
+        bool enablePhaser = isElectronic ? random.NextDouble() > 0.4 : random.NextDouble() > 0.6; // Psychedelic effect - more accessible
+        bool enableDistortion = isHighEnergy ? (isElectronic || random.NextDouble() > 0.4) : random.NextDouble() > 0.6; // Grit for high energy, but can add character
+        bool enableSaturation = isMidEnergy ? random.NextDouble() > 0.3 : random.NextDouble() > 0.5; // Warmer alternative - more versatile
+        bool enableTremolo = isFastBPM ? random.NextDouble() > 0.4 : random.NextDouble() > 0.6; // Rhythmic variation - works on slower tracks too
+        bool enableVibrato = !isFastBPM ? random.NextDouble() > 0.4 : random.NextDouble() > 0.6; // Pitch modulation - can add expression to fast tracks
+        bool enableEcho = isSlowBPM || !isHighEnergy ? random.NextDouble() > 0.3 : random.NextDouble() > 0.5; // Depth - very versatile
+        bool enableFilter = isElectronic ? random.NextDouble() > 0.4 : random.NextDouble() > 0.6; // EQ shaping - useful for all genres
+        bool enableBitcrusher = isElectronic ? random.NextDouble() > 0.5 : random.NextDouble() > 0.7; // Lo-fi effect - more accessible for electronic
+        bool enableGate = isFastBPM && isHighEnergy ? random.NextDouble() > 0.4 : (isFastBPM ? random.NextDouble() > 0.6 : random.NextDouble() > 0.7); // Rhythmic gating - more versatile
         
         // Don't enable too many modulation effects at once (they can conflict)
         int modulationCount = (enableChorus ? 1 : 0) + (enableFlanger ? 1 : 0) + (enablePhaser ? 1 : 0);
@@ -153,9 +157,12 @@ public class AIService
             Reverb = new ReverbSettings
             {
                 Enabled = enableReverb,
-                RoomSize = 0.3 + random.NextDouble() * 0.4, // 0.3 to 0.7
-                Damping = 0.3 + random.NextDouble() * 0.4, // 0.3 to 0.7
-                WetLevel = enableReverb ? 0.2 + random.NextDouble() * 0.3 : 0.0 // 0.2 to 0.5 if enabled
+                // Larger room for slower tracks, smaller for fast
+                RoomSize = isSlowBPM ? 0.5 + random.NextDouble() * 0.3 : 0.3 + random.NextDouble() * 0.4,
+                // More damping for high energy, less for ambient
+                Damping = isHighEnergy ? 0.5 + random.NextDouble() * 0.3 : 0.3 + random.NextDouble() * 0.4,
+                // Moderate wet level, slightly higher for electronic
+                WetLevel = enableReverb ? (isElectronic ? 0.25 + random.NextDouble() * 0.25 : 0.2 + random.NextDouble() * 0.3) : 0.0
             },
             Echo = new EchoSettings 
             { 
@@ -191,11 +198,16 @@ public class AIService
             Compressor = new CompressorSettings
             {
                 Enabled = enableCompressor,
-                Threshold = enableCompressor ? -20.0 + random.NextDouble() * 8.0 : -12.0, // -20 to -12 dB
-                Ratio = enableCompressor ? 3.0 + random.NextDouble() * 5.0 : 4.0, // 3.0 to 8.0
-                Attack = enableCompressor ? 5.0 + random.NextDouble() * 15.0 : 10.0, // 5 to 20 ms
-                Release = enableCompressor ? 50.0 + random.NextDouble() * 100.0 : 100.0, // 50 to 150 ms
-                MakeupGain = enableCompressor ? random.NextDouble() * 3.0 : 0.0 // 0 to 3 dB
+                // Lower threshold for high energy tracks
+                Threshold = enableCompressor ? (isHighEnergy ? -24.0 + random.NextDouble() * 6.0 : -18.0 + random.NextDouble() * 6.0) : -12.0,
+                // Higher ratio for electronic/dance music
+                Ratio = enableCompressor ? (isElectronic ? 4.0 + random.NextDouble() * 6.0 : 3.0 + random.NextDouble() * 5.0) : 4.0,
+                // Faster attack for punchy tracks
+                Attack = enableCompressor ? (isFastBPM ? 3.0 + random.NextDouble() * 10.0 : 5.0 + random.NextDouble() * 15.0) : 10.0,
+                // Faster release for fast BPM
+                Release = enableCompressor ? (isFastBPM ? 30.0 + random.NextDouble() * 70.0 : 50.0 + random.NextDouble() * 100.0) : 100.0,
+                // Makeup gain based on compression amount
+                MakeupGain = enableCompressor ? (isHighEnergy ? 1.0 + random.NextDouble() * 2.0 : random.NextDouble() * 2.0) : 0.0
             },
             Phaser = new PhaserSettings 
             { 
@@ -208,8 +220,53 @@ public class AIService
             Tremolo = new TremoloSettings 
             { 
                 Enabled = enableTremolo,
-                Rate = enableTremolo ? 3.0 + random.NextDouble() * 4.0 : 5.0, // 3.0 to 7.0 Hz
-                Depth = enableTremolo ? 0.3 + random.NextDouble() * 0.4 : 0.5 // 0.3 to 0.7
+                // Rate synced to BPM for rhythmic effect
+                Rate = enableTremolo ? (features.BPM / 60.0 * 0.5) + random.NextDouble() * (features.BPM / 60.0 * 0.5) : 5.0,
+                // Moderate depth for musicality
+                Depth = enableTremolo ? 0.3 + random.NextDouble() * 0.3 : 0.5
+            },
+            Bitcrusher = new BitcrusherSettings
+            {
+                Enabled = enableBitcrusher,
+                // Lower bit depth for more lo-fi character
+                BitDepth = enableBitcrusher ? 4.0 + random.NextDouble() * 6.0 : 8.0,
+                // Moderate downsampling for character without destroying the sound
+                Downsample = enableBitcrusher ? 1.5 + random.NextDouble() * 2.0 : 2.0,
+                // Lower mix to preserve clarity
+                Mix = enableBitcrusher ? 0.2 + random.NextDouble() * 0.3 : 0.5
+            },
+            Vibrato = new VibratoSettings
+            {
+                Enabled = enableVibrato,
+                // Slower rate for expressive vibrato
+                Rate = enableVibrato ? 4.0 + random.NextDouble() * 3.0 : 5.0,
+                // Subtle depth for musical vibrato
+                Depth = enableVibrato ? 0.05 + random.NextDouble() * 0.1 : 0.1,
+                // Full mix for vibrato (it's meant to be heard)
+                Mix = enableVibrato ? 0.7 + random.NextDouble() * 0.3 : 1.0
+            },
+            Saturation = new SaturationSettings
+            {
+                Enabled = enableSaturation,
+                // Moderate drive for warmth without harshness
+                Drive = enableSaturation ? 0.4 + random.NextDouble() * 0.3 : 0.5,
+                // Balanced tone
+                Tone = enableSaturation ? 0.4 + random.NextDouble() * 0.3 : 0.5,
+                // Moderate mix to preserve clarity
+                Mix = enableSaturation ? 0.3 + random.NextDouble() * 0.4 : 0.5
+            },
+            Gate = new GateSettings
+            {
+                Enabled = enableGate,
+                // Threshold based on energy level
+                Threshold = enableGate ? (isHighEnergy ? 0.08 + random.NextDouble() * 0.12 : 0.05 + random.NextDouble() * 0.15) : 0.1,
+                // Higher ratio for more pronounced gating
+                Ratio = enableGate ? 8.0 + random.NextDouble() * 12.0 : 10.0,
+                // Very fast attack for rhythmic gating
+                Attack = enableGate ? 0.5 + random.NextDouble() * 1.5 : 1.0,
+                // Fast release synced to BPM
+                Release = enableGate ? (1000.0 / (features.BPM / 60.0) * 0.5) + random.NextDouble() * (1000.0 / (features.BPM / 60.0) * 0.5) : 50.0,
+                Floor = enableGate ? 0.0 : 0.0
             }
         };
         
@@ -221,8 +278,12 @@ public class AIService
         if (enableFlanger) enabledEffects.Add("Flanger");
         if (enablePhaser) enabledEffects.Add("Phaser");
         if (enableDistortion) enabledEffects.Add("Distortion");
+        if (enableSaturation) enabledEffects.Add("Saturation");
         if (enableTremolo) enabledEffects.Add("Tremolo");
+        if (enableVibrato) enabledEffects.Add("Vibrato");
         if (enableEcho) enabledEffects.Add("Echo");
+        if (enableBitcrusher) enabledEffects.Add("Bitcrusher");
+        if (enableGate) enabledEffects.Add("Gate");
         
         var effectsList = enabledEffects.Count > 0 ? string.Join(", ", enabledEffects) : "None";
         var reasoning = $"Applied randomized remix settings based on audio analysis (BPM: {features.BPM:F1}, Energy: {features.Energy:F2}). " +
@@ -696,6 +757,58 @@ public class AIService
                 if (phaser.TryGetProperty("mix", out var mix))
                     suggestion.Settings.Phaser.Mix = mix.GetDouble();
                 Logger.Debug($"Parsed phaser: Enabled={suggestion.Settings.Phaser.Enabled}");
+            }
+            
+            if (doc.RootElement.TryGetProperty("bitcrusher", out var bitcrusher))
+            {
+                suggestion.Settings.Bitcrusher.Enabled = bitcrusher.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (bitcrusher.TryGetProperty("bitDepth", out var bitDepth))
+                    suggestion.Settings.Bitcrusher.BitDepth = bitDepth.GetDouble();
+                if (bitcrusher.TryGetProperty("downsample", out var downsample))
+                    suggestion.Settings.Bitcrusher.Downsample = downsample.GetDouble();
+                if (bitcrusher.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Bitcrusher.Mix = mix.GetDouble();
+                Logger.Debug($"Parsed bitcrusher: Enabled={suggestion.Settings.Bitcrusher.Enabled}");
+            }
+            
+            if (doc.RootElement.TryGetProperty("vibrato", out var vibrato))
+            {
+                suggestion.Settings.Vibrato.Enabled = vibrato.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (vibrato.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Vibrato.Rate = rate.GetDouble();
+                if (vibrato.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Vibrato.Depth = depth.GetDouble();
+                if (vibrato.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Vibrato.Mix = mix.GetDouble();
+                Logger.Debug($"Parsed vibrato: Enabled={suggestion.Settings.Vibrato.Enabled}");
+            }
+            
+            if (doc.RootElement.TryGetProperty("saturation", out var saturation))
+            {
+                suggestion.Settings.Saturation.Enabled = saturation.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (saturation.TryGetProperty("drive", out var drive))
+                    suggestion.Settings.Saturation.Drive = drive.GetDouble();
+                if (saturation.TryGetProperty("tone", out var tone))
+                    suggestion.Settings.Saturation.Tone = tone.GetDouble();
+                if (saturation.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Saturation.Mix = mix.GetDouble();
+                Logger.Debug($"Parsed saturation: Enabled={suggestion.Settings.Saturation.Enabled}");
+            }
+            
+            if (doc.RootElement.TryGetProperty("gate", out var gate))
+            {
+                suggestion.Settings.Gate.Enabled = gate.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (gate.TryGetProperty("threshold", out var threshold))
+                    suggestion.Settings.Gate.Threshold = threshold.GetDouble();
+                if (gate.TryGetProperty("ratio", out var ratio))
+                    suggestion.Settings.Gate.Ratio = ratio.GetDouble();
+                if (gate.TryGetProperty("attack", out var attack))
+                    suggestion.Settings.Gate.Attack = attack.GetDouble();
+                if (gate.TryGetProperty("release", out var release))
+                    suggestion.Settings.Gate.Release = release.GetDouble();
+                if (gate.TryGetProperty("floor", out var floor))
+                    suggestion.Settings.Gate.Floor = floor.GetDouble();
+                Logger.Debug($"Parsed gate: Enabled={suggestion.Settings.Gate.Enabled}");
             }
             
             if (doc.RootElement.TryGetProperty("reasoning", out var reasoning))

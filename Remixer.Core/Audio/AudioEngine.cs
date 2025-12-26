@@ -337,6 +337,28 @@ public class AudioEngine : IDisposable
         };
         _effects.Add(tremolo);
 
+        // Vibrato (pitch modulation)
+        var vibrato = new VibratoEffect
+        {
+            IsEnabled = _settings.Vibrato.Enabled,
+            Rate = _settings.Vibrato.Rate,
+            Depth = _settings.Vibrato.Depth,
+            Mix = _settings.Vibrato.Mix
+        };
+        _effects.Add(vibrato);
+
+        // Gate (rhythmic gating)
+        var gate = new GateEffect
+        {
+            IsEnabled = _settings.Gate.Enabled,
+            Threshold = _settings.Gate.Threshold,
+            Ratio = _settings.Gate.Ratio,
+            Attack = _settings.Gate.Attack,
+            Release = _settings.Gate.Release,
+            Floor = _settings.Gate.Floor
+        };
+        _effects.Add(gate);
+
         // Compressor (dynamic processing)
         var compressor = new CompressorEffect
         {
@@ -349,6 +371,16 @@ public class AudioEngine : IDisposable
         };
         _effects.Add(compressor);
 
+        // Saturation (softer distortion)
+        var saturation = new SaturationEffect
+        {
+            IsEnabled = _settings.Saturation.Enabled,
+            Drive = _settings.Saturation.Drive,
+            Tone = _settings.Saturation.Tone,
+            Mix = _settings.Saturation.Mix
+        };
+        _effects.Add(saturation);
+
         // Distortion (non-linear processing)
         var distortion = new DistortionEffect
         {
@@ -358,6 +390,16 @@ public class AudioEngine : IDisposable
             Mix = _settings.Distortion.Mix
         };
         _effects.Add(distortion);
+
+        // Bitcrusher (lo-fi effect)
+        var bitcrusher = new BitcrusherEffect
+        {
+            IsEnabled = _settings.Bitcrusher.Enabled,
+            BitDepth = _settings.Bitcrusher.BitDepth,
+            Downsample = _settings.Bitcrusher.Downsample,
+            Mix = _settings.Bitcrusher.Mix
+        };
+        _effects.Add(bitcrusher);
 
         // Chorus
         var chorus = new ChorusEffect

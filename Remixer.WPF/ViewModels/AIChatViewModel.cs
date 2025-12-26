@@ -115,7 +115,30 @@ public partial class AIChatViewModel : ObservableObject
                 Role = m.Role, 
                 Content = m.Content 
             }).ToList();
-            var response = await _aiService.SendChatMessageAsync(fullPrompt, history);
+            
+            string? response = null;
+            try
+            {
+                response = await _aiService.SendChatMessageAsync(fullPrompt, history);
+            }
+            catch (Exception apiEx)
+            {
+                Logger.Warning($"AI API call failed: {apiEx.Message}. Falling back to intelligent remix suggestion.");
+                // Fall back to intelligent remix suggestion based on audio features
+                if (_currentFeatures != null)
+                {
+                    var fallbackSuggestion = _aiService.CreateDefaultSuggestion(_currentFeatures);
+                    if (fallbackSuggestion != null)
+                    {
+                        response = BuildFallbackResponse(fallbackSuggestion, userMessage);
+                    }
+                }
+                
+                if (string.IsNullOrEmpty(response))
+                {
+                    throw; // Re-throw if we couldn't create a fallback
+                }
+            }
 
             // Remove typing indicator
             Messages.Remove(typingMessage);
@@ -163,6 +186,14 @@ public partial class AIChatViewModel : ObservableObject
                         settingsDesc.Append(", Echo enabled");
                     if (suggestion.Settings.Filter?.Enabled == true)
                         settingsDesc.Append(", Filter enabled");
+                    if (suggestion.Settings.Bitcrusher?.Enabled == true)
+                        settingsDesc.Append(", Bitcrusher enabled");
+                    if (suggestion.Settings.Vibrato?.Enabled == true)
+                        settingsDesc.Append(", Vibrato enabled");
+                    if (suggestion.Settings.Saturation?.Enabled == true)
+                        settingsDesc.Append(", Saturation enabled");
+                    if (suggestion.Settings.Gate?.Enabled == true)
+                        settingsDesc.Append(", Gate enabled");
                     friendlyMessage = settingsDesc.ToString();
                 }
                 
@@ -215,6 +246,10 @@ public partial class AIChatViewModel : ObservableObject
         prompt.AppendLine("  \"reverb\": { \"enabled\": true, \"roomSize\": 0.5, \"damping\": 0.5, \"wetLevel\": 0.3 },");
         prompt.AppendLine("  \"echo\": { \"enabled\": false, \"delay\": 0.2, \"feedback\": 0.3, \"wetLevel\": 0.3 },");
         prompt.AppendLine("  \"filter\": { \"enabled\": false, \"lowCut\": 20.0, \"highCut\": 20000.0, \"lowGain\": 0.0, \"midGain\": 0.0, \"highGain\": 0.0 },");
+        prompt.AppendLine("  \"bitcrusher\": { \"enabled\": false, \"bitDepth\": 8.0, \"downsample\": 2.0, \"mix\": 0.5 },  // BitDepth: 1-16 bits, Downsample: 1.0-10.0, Mix: 0-1");
+        prompt.AppendLine("  \"vibrato\": { \"enabled\": false, \"rate\": 5.0, \"depth\": 0.1, \"mix\": 1.0 },  // Rate: 0.1-10 Hz, Depth: 0-2 semitones, Mix: 0-1");
+        prompt.AppendLine("  \"saturation\": { \"enabled\": false, \"drive\": 0.5, \"tone\": 0.5, \"mix\": 0.5 },  // Drive/Tone/Mix: 0-1");
+        prompt.AppendLine("  \"gate\": { \"enabled\": false, \"threshold\": 0.1, \"ratio\": 10.0, \"attack\": 1.0, \"release\": 50.0, \"floor\": 0.0 },  // Threshold: 0-1, Ratio: 1-100, Attack/Release: ms, Floor: 0-1");
         prompt.AppendLine("  \"reasoning\": \"Your explanation\"");
         prompt.AppendLine("}");
         prompt.AppendLine("```");
@@ -434,6 +469,54 @@ public partial class AIChatViewModel : ObservableObject
                     suggestion.Settings.Phaser.Mix = mix.GetDouble();
             }
             
+            if (doc.RootElement.TryGetProperty("bitcrusher", out var bitcrusher))
+            {
+                suggestion.Settings.Bitcrusher.Enabled = bitcrusher.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (bitcrusher.TryGetProperty("bitDepth", out var bitDepth))
+                    suggestion.Settings.Bitcrusher.BitDepth = (int)bitDepth.GetDouble();
+                if (bitcrusher.TryGetProperty("downsample", out var downsample))
+                    suggestion.Settings.Bitcrusher.Downsample = downsample.GetDouble();
+                if (bitcrusher.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Bitcrusher.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("vibrato", out var vibrato))
+            {
+                suggestion.Settings.Vibrato.Enabled = vibrato.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (vibrato.TryGetProperty("rate", out var rate))
+                    suggestion.Settings.Vibrato.Rate = rate.GetDouble();
+                if (vibrato.TryGetProperty("depth", out var depth))
+                    suggestion.Settings.Vibrato.Depth = depth.GetDouble();
+                if (vibrato.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Vibrato.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("saturation", out var saturation))
+            {
+                suggestion.Settings.Saturation.Enabled = saturation.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (saturation.TryGetProperty("drive", out var drive))
+                    suggestion.Settings.Saturation.Drive = drive.GetDouble();
+                if (saturation.TryGetProperty("tone", out var tone))
+                    suggestion.Settings.Saturation.Tone = tone.GetDouble();
+                if (saturation.TryGetProperty("mix", out var mix))
+                    suggestion.Settings.Saturation.Mix = mix.GetDouble();
+            }
+            
+            if (doc.RootElement.TryGetProperty("gate", out var gate))
+            {
+                suggestion.Settings.Gate.Enabled = gate.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean();
+                if (gate.TryGetProperty("threshold", out var threshold))
+                    suggestion.Settings.Gate.Threshold = threshold.GetDouble();
+                if (gate.TryGetProperty("ratio", out var ratio))
+                    suggestion.Settings.Gate.Ratio = ratio.GetDouble();
+                if (gate.TryGetProperty("attack", out var attack))
+                    suggestion.Settings.Gate.Attack = attack.GetDouble();
+                if (gate.TryGetProperty("release", out var release))
+                    suggestion.Settings.Gate.Release = release.GetDouble();
+                if (gate.TryGetProperty("floor", out var floor))
+                    suggestion.Settings.Gate.Floor = floor.GetDouble();
+            }
+            
             if (doc.RootElement.TryGetProperty("reasoning", out var reasoning))
                 suggestion.Reasoning = reasoning.GetString();
             
@@ -475,6 +558,87 @@ public partial class AIChatViewModel : ObservableObject
         var message = new ChatMessage { Role = "system", Content = content, Timestamp = DateTime.Now };
         Messages.Add(message);
         return message;
+    }
+
+    private string BuildFallbackResponse(RemixSuggestion suggestion, string userMessage)
+    {
+        // Build a JSON response that matches the expected format
+        var json = new System.Text.StringBuilder();
+        json.AppendLine("{");
+        json.AppendLine($"  \"tempo\": {suggestion.Settings.Tempo:F2},");
+        json.AppendLine($"  \"pitch\": {suggestion.Settings.Pitch:F1},");
+        json.AppendLine($"  \"volume\": {suggestion.Settings.Volume:F2},");
+        
+        if (suggestion.Settings.Tremolo != null)
+        {
+            json.AppendLine($"  \"tremolo\": {{ \"enabled\": {suggestion.Settings.Tremolo.Enabled.ToString().ToLower()}, \"rate\": {suggestion.Settings.Tremolo.Rate:F2}, \"depth\": {suggestion.Settings.Tremolo.Depth:F2} }},");
+        }
+        
+        if (suggestion.Settings.Compressor != null)
+        {
+            json.AppendLine($"  \"compressor\": {{ \"enabled\": {suggestion.Settings.Compressor.Enabled.ToString().ToLower()}, \"threshold\": {suggestion.Settings.Compressor.Threshold:F1}, \"ratio\": {suggestion.Settings.Compressor.Ratio:F1}, \"attack\": {suggestion.Settings.Compressor.Attack:F1}, \"release\": {suggestion.Settings.Compressor.Release:F1}, \"makeupGain\": {suggestion.Settings.Compressor.MakeupGain:F1} }},");
+        }
+        
+        if (suggestion.Settings.Distortion != null)
+        {
+            json.AppendLine($"  \"distortion\": {{ \"enabled\": {suggestion.Settings.Distortion.Enabled.ToString().ToLower()}, \"drive\": {suggestion.Settings.Distortion.Drive:F2}, \"tone\": {suggestion.Settings.Distortion.Tone:F2}, \"mix\": {suggestion.Settings.Distortion.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Chorus != null)
+        {
+            json.AppendLine($"  \"chorus\": {{ \"enabled\": {suggestion.Settings.Chorus.Enabled.ToString().ToLower()}, \"rate\": {suggestion.Settings.Chorus.Rate:F2}, \"depth\": {suggestion.Settings.Chorus.Depth:F2}, \"mix\": {suggestion.Settings.Chorus.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Flanger != null)
+        {
+            json.AppendLine($"  \"flanger\": {{ \"enabled\": {suggestion.Settings.Flanger.Enabled.ToString().ToLower()}, \"delay\": {suggestion.Settings.Flanger.Delay:F4}, \"rate\": {suggestion.Settings.Flanger.Rate:F2}, \"depth\": {suggestion.Settings.Flanger.Depth:F2}, \"feedback\": {suggestion.Settings.Flanger.Feedback:F2}, \"mix\": {suggestion.Settings.Flanger.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Phaser != null)
+        {
+            json.AppendLine($"  \"phaser\": {{ \"enabled\": {suggestion.Settings.Phaser.Enabled.ToString().ToLower()}, \"rate\": {suggestion.Settings.Phaser.Rate:F2}, \"depth\": {suggestion.Settings.Phaser.Depth:F2}, \"feedback\": {suggestion.Settings.Phaser.Feedback:F2}, \"mix\": {suggestion.Settings.Phaser.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Reverb != null)
+        {
+            json.AppendLine($"  \"reverb\": {{ \"enabled\": {suggestion.Settings.Reverb.Enabled.ToString().ToLower()}, \"roomSize\": {suggestion.Settings.Reverb.RoomSize:F2}, \"damping\": {suggestion.Settings.Reverb.Damping:F2}, \"wetLevel\": {suggestion.Settings.Reverb.WetLevel:F2} }},");
+        }
+        
+        if (suggestion.Settings.Echo != null)
+        {
+            json.AppendLine($"  \"echo\": {{ \"enabled\": {suggestion.Settings.Echo.Enabled.ToString().ToLower()}, \"delay\": {suggestion.Settings.Echo.Delay:F2}, \"feedback\": {suggestion.Settings.Echo.Feedback:F2}, \"wetLevel\": {suggestion.Settings.Echo.WetLevel:F2} }},");
+        }
+        
+        if (suggestion.Settings.Filter != null)
+        {
+            json.AppendLine($"  \"filter\": {{ \"enabled\": {suggestion.Settings.Filter.Enabled.ToString().ToLower()}, \"lowCut\": {suggestion.Settings.Filter.LowCut:F1}, \"highCut\": {suggestion.Settings.Filter.HighCut:F1}, \"lowGain\": {suggestion.Settings.Filter.LowGain:F1}, \"midGain\": {suggestion.Settings.Filter.MidGain:F1}, \"highGain\": {suggestion.Settings.Filter.HighGain:F1} }},");
+        }
+        
+        if (suggestion.Settings.Bitcrusher != null)
+        {
+            json.AppendLine($"  \"bitcrusher\": {{ \"enabled\": {suggestion.Settings.Bitcrusher.Enabled.ToString().ToLower()}, \"bitDepth\": {suggestion.Settings.Bitcrusher.BitDepth:F0}, \"downsample\": {suggestion.Settings.Bitcrusher.Downsample:F2}, \"mix\": {suggestion.Settings.Bitcrusher.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Vibrato != null)
+        {
+            json.AppendLine($"  \"vibrato\": {{ \"enabled\": {suggestion.Settings.Vibrato.Enabled.ToString().ToLower()}, \"rate\": {suggestion.Settings.Vibrato.Rate:F2}, \"depth\": {suggestion.Settings.Vibrato.Depth:F2}, \"mix\": {suggestion.Settings.Vibrato.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Saturation != null)
+        {
+            json.AppendLine($"  \"saturation\": {{ \"enabled\": {suggestion.Settings.Saturation.Enabled.ToString().ToLower()}, \"drive\": {suggestion.Settings.Saturation.Drive:F2}, \"tone\": {suggestion.Settings.Saturation.Tone:F2}, \"mix\": {suggestion.Settings.Saturation.Mix:F2} }},");
+        }
+        
+        if (suggestion.Settings.Gate != null)
+        {
+            json.AppendLine($"  \"gate\": {{ \"enabled\": {suggestion.Settings.Gate.Enabled.ToString().ToLower()}, \"threshold\": {suggestion.Settings.Gate.Threshold:F2}, \"ratio\": {suggestion.Settings.Gate.Ratio:F1}, \"attack\": {suggestion.Settings.Gate.Attack:F1}, \"release\": {suggestion.Settings.Gate.Release:F1}, \"floor\": {suggestion.Settings.Gate.Floor:F2} }},");
+        }
+        
+        var reasoning = suggestion.Reasoning ?? $"Applied intelligent remix settings based on your request: '{userMessage}' and audio analysis.";
+        json.AppendLine($"  \"reasoning\": \"{reasoning.Replace("\"", "\\\"")}\"");
+        json.AppendLine("}");
+        
+        return json.ToString();
     }
 
     [RelayCommand]

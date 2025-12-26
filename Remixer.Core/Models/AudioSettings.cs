@@ -58,6 +58,10 @@ public class AudioSettings : INotifyPropertyChanged
     public CompressorSettings Compressor { get; set; } = new();
     public PhaserSettings Phaser { get; set; } = new();
     public TremoloSettings Tremolo { get; set; } = new();
+    public BitcrusherSettings Bitcrusher { get; set; } = new();
+    public VibratoSettings Vibrato { get; set; } = new();
+    public SaturationSettings Saturation { get; set; } = new();
+    public GateSettings Gate { get; set; } = new();
     
     public bool IsAISet
     {
@@ -754,6 +758,302 @@ public class TremoloSettings : INotifyPropertyChanged
             if (_depth != value)
             {
                 _depth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class BitcrusherSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _bitDepth = 8.0;
+    private double _downsample = 2.0;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double BitDepth
+    {
+        get => _bitDepth;
+        set
+        {
+            if (_bitDepth != value)
+            {
+                _bitDepth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Downsample
+    {
+        get => _downsample;
+        set
+        {
+            if (_downsample != value)
+            {
+                _downsample = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class VibratoSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _rate = 5.0;
+    private double _depth = 0.1;
+    private double _mix = 1.0;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Rate
+    {
+        get => _rate;
+        set
+        {
+            if (_rate != value)
+            {
+                _rate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Depth
+    {
+        get => _depth;
+        set
+        {
+            if (_depth != value)
+            {
+                _depth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class SaturationSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _drive = 0.5;
+    private double _tone = 0.5;
+    private double _mix = 0.5;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Drive
+    {
+        get => _drive;
+        set
+        {
+            if (_drive != value)
+            {
+                _drive = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Tone
+    {
+        get => _tone;
+        set
+        {
+            if (_tone != value)
+            {
+                _tone = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Mix
+    {
+        get => _mix;
+        set
+        {
+            if (_mix != value)
+            {
+                _mix = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class GateSettings : INotifyPropertyChanged
+{
+    private bool _enabled = false;
+    private double _threshold = 0.1;
+    private double _ratio = 10.0;
+    private double _attack = 1.0;
+    private double _release = 50.0;
+    private double _floor = 0.0;
+    
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                _enabled = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Threshold
+    {
+        get => _threshold;
+        set
+        {
+            if (_threshold != value)
+            {
+                _threshold = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Ratio
+    {
+        get => _ratio;
+        set
+        {
+            if (_ratio != value)
+            {
+                _ratio = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Attack
+    {
+        get => _attack;
+        set
+        {
+            if (_attack != value)
+            {
+                _attack = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Release
+    {
+        get => _release;
+        set
+        {
+            if (_release != value)
+            {
+                _release = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    
+    public double Floor
+    {
+        get => _floor;
+        set
+        {
+            if (_floor != value)
+            {
+                _floor = value;
                 OnPropertyChanged();
             }
         }

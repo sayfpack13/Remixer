@@ -274,6 +274,9 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -1047,6 +1050,306 @@
                                             Style="{StaticResource ModernSlider}"
                                             TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
                                     <TextBlock Text="{Binding Settings.Phaser.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- New Effects Row 1: Bitcrusher & Vibrato -->
+                    <GroupBox Grid.Row="6" Grid.Column="0" Header="🎛️ Bitcrusher" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Bitcrusher" IsChecked="{Binding Settings.Bitcrusher.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Bitcrusher.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Bit Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="16" 
+                                            Value="{Binding Settings.Bitcrusher.BitDepth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Bitcrusher.BitDepth, StringFormat='{}{0:F0}bit'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Downsample" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="10" 
+                                            Value="{Binding Settings.Bitcrusher.Downsample, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Bitcrusher.Downsample, StringFormat='{}{0:F1}x'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Bitcrusher.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Bitcrusher.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Grid.Row="6" Grid.Column="1" Header="🎵 Vibrato" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Vibrato" IsChecked="{Binding Settings.Vibrato.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Vibrato.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Rate" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="10" 
+                                            Value="{Binding Settings.Vibrato.Rate, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Vibrato.Rate, StringFormat='{}{0:F1}Hz'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Depth" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="2" 
+                                            Value="{Binding Settings.Vibrato.Depth, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Vibrato.Depth, StringFormat='{}{0:F2}st'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Vibrato.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Vibrato.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- New Effects Row 2: Saturation & Gate -->
+                    <GroupBox Grid.Row="7" Grid.Column="0" Header="🔥 Saturation" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Saturation" IsChecked="{Binding Settings.Saturation.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Saturation.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Drive" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Saturation.Drive, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Saturation.Drive, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Tone" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Saturation.Tone, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Saturation.Tone, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mix" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Saturation.Mix, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Saturation.Mix, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Grid.Row="7" Grid.Column="1" Header="🚪 Gate" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
+                        <GroupBox.Visibility>
+                            <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                        </GroupBox.Visibility>
+                        <StackPanel>
+                            <CheckBox Content="Enable Gate" IsChecked="{Binding Settings.Gate.Enabled}" 
+                                      Style="{StaticResource ModernCheckBox}"/>
+                            <Grid IsEnabled="{Binding Settings.Gate.Enabled}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Threshold" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Gate.Threshold, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Gate.Threshold, StringFormat='{}{0:F2}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Ratio" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="100" 
+                                            Value="{Binding Settings.Gate.Ratio, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Gate.Ratio, StringFormat='{}{0:F0}'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="2" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Attack" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0.1" Maximum="100" 
+                                            Value="{Binding Settings.Gate.Attack, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="5" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Gate.Attack, StringFormat='{}{0:F1}ms'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="3" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Release" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="1000" 
+                                            Value="{Binding Settings.Gate.Release, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="50" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Gate.Release, StringFormat='{}{0:F0}ms'}" Grid.Column="2" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Style="{StaticResource BodyText}"/>
+                                </Grid>
+                                <Grid Grid.Row="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="60"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Floor" Grid.Column="0" VerticalAlignment="Center" 
+                                               Style="{StaticResource BodyText}"/>
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" 
+                                            Value="{Binding Settings.Gate.Floor, UpdateSourceTrigger=PropertyChanged}" 
+                                            Style="{StaticResource ModernSlider}"
+                                            TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                    <TextBlock Text="{Binding Settings.Gate.Floor, StringFormat='{}{0:F2}'}" Grid.Column="2" 
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>

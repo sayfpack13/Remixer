@@ -395,6 +395,10 @@ public partial class MainViewModel : ObservableObject
                 if (oldSettings.Compressor != null) oldSettings.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Phaser != null) oldSettings.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
                 if (oldSettings.Tremolo != null) oldSettings.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Bitcrusher != null) oldSettings.Bitcrusher.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Vibrato != null) oldSettings.Vibrato.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Saturation != null) oldSettings.Saturation.PropertyChanged -= OnSettingsPropertyChanged;
+                if (oldSettings.Gate != null) oldSettings.Gate.PropertyChanged -= OnSettingsPropertyChanged;
             }
             
             // Update settings (UI gets its own instance)
@@ -415,6 +419,10 @@ public partial class MainViewModel : ObservableObject
                 if (Settings.Compressor != null) Settings.Compressor.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Phaser != null) Settings.Phaser.PropertyChanged += OnSettingsPropertyChanged;
                 if (Settings.Tremolo != null) Settings.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Bitcrusher != null) Settings.Bitcrusher.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Vibrato != null) Settings.Vibrato.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Saturation != null) Settings.Saturation.PropertyChanged += OnSettingsPropertyChanged;
+                if (Settings.Gate != null) Settings.Gate.PropertyChanged += OnSettingsPropertyChanged;
             }
             
             // Process audio with new AI settings in background, seamlessly transitioning playback
@@ -729,6 +737,36 @@ public partial class MainViewModel : ObservableObject
                     Rate = SelectedPreset.Settings.Tremolo.Rate,
                     Depth = SelectedPreset.Settings.Tremolo.Depth
                 },
+                Bitcrusher = new BitcrusherSettings
+                {
+                    Enabled = SelectedPreset.Settings.Bitcrusher.Enabled,
+                    BitDepth = SelectedPreset.Settings.Bitcrusher.BitDepth,
+                    Downsample = SelectedPreset.Settings.Bitcrusher.Downsample,
+                    Mix = SelectedPreset.Settings.Bitcrusher.Mix
+                },
+                Vibrato = new VibratoSettings
+                {
+                    Enabled = SelectedPreset.Settings.Vibrato.Enabled,
+                    Rate = SelectedPreset.Settings.Vibrato.Rate,
+                    Depth = SelectedPreset.Settings.Vibrato.Depth,
+                    Mix = SelectedPreset.Settings.Vibrato.Mix
+                },
+                Saturation = new SaturationSettings
+                {
+                    Enabled = SelectedPreset.Settings.Saturation.Enabled,
+                    Drive = SelectedPreset.Settings.Saturation.Drive,
+                    Tone = SelectedPreset.Settings.Saturation.Tone,
+                    Mix = SelectedPreset.Settings.Saturation.Mix
+                },
+                Gate = new GateSettings
+                {
+                    Enabled = SelectedPreset.Settings.Gate.Enabled,
+                    Threshold = SelectedPreset.Settings.Gate.Threshold,
+                    Ratio = SelectedPreset.Settings.Gate.Ratio,
+                    Attack = SelectedPreset.Settings.Gate.Attack,
+                    Release = SelectedPreset.Settings.Gate.Release,
+                    Floor = SelectedPreset.Settings.Gate.Floor
+                },
                 IsAISet = false
             };
 
@@ -889,6 +927,36 @@ public partial class MainViewModel : ObservableObject
                             Enabled = Settings.Tremolo.Enabled,
                             Rate = Settings.Tremolo.Rate,
                             Depth = Settings.Tremolo.Depth
+                        },
+                        Bitcrusher = new BitcrusherSettings
+                        {
+                            Enabled = Settings.Bitcrusher.Enabled,
+                            BitDepth = Settings.Bitcrusher.BitDepth,
+                            Downsample = Settings.Bitcrusher.Downsample,
+                            Mix = Settings.Bitcrusher.Mix
+                        },
+                        Vibrato = new VibratoSettings
+                        {
+                            Enabled = Settings.Vibrato.Enabled,
+                            Rate = Settings.Vibrato.Rate,
+                            Depth = Settings.Vibrato.Depth,
+                            Mix = Settings.Vibrato.Mix
+                        },
+                        Saturation = new SaturationSettings
+                        {
+                            Enabled = Settings.Saturation.Enabled,
+                            Drive = Settings.Saturation.Drive,
+                            Tone = Settings.Saturation.Tone,
+                            Mix = Settings.Saturation.Mix
+                        },
+                        Gate = new GateSettings
+                        {
+                            Enabled = Settings.Gate.Enabled,
+                            Threshold = Settings.Gate.Threshold,
+                            Ratio = Settings.Gate.Ratio,
+                            Attack = Settings.Gate.Attack,
+                            Release = Settings.Gate.Release,
+                            Floor = Settings.Gate.Floor
                         }
                     }
                 };
@@ -1145,6 +1213,10 @@ public partial class MainViewModel : ObservableObject
             if (oldValue.Compressor != null) oldValue.Compressor.PropertyChanged -= OnSettingsPropertyChanged;
             if (oldValue.Phaser != null) oldValue.Phaser.PropertyChanged -= OnSettingsPropertyChanged;
             if (oldValue.Tremolo != null) oldValue.Tremolo.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Bitcrusher != null) oldValue.Bitcrusher.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Vibrato != null) oldValue.Vibrato.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Saturation != null) oldValue.Saturation.PropertyChanged -= OnSettingsPropertyChanged;
+            if (oldValue.Gate != null) oldValue.Gate.PropertyChanged -= OnSettingsPropertyChanged;
         }
         
         // Subscribe to new settings
@@ -1160,6 +1232,10 @@ public partial class MainViewModel : ObservableObject
             if (newValue.Compressor != null) newValue.Compressor.PropertyChanged += OnSettingsPropertyChanged;
             if (newValue.Phaser != null) newValue.Phaser.PropertyChanged += OnSettingsPropertyChanged;
             if (newValue.Tremolo != null) newValue.Tremolo.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Bitcrusher != null) newValue.Bitcrusher.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Vibrato != null) newValue.Vibrato.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Saturation != null) newValue.Saturation.PropertyChanged += OnSettingsPropertyChanged;
+            if (newValue.Gate != null) newValue.Gate.PropertyChanged += OnSettingsPropertyChanged;
         }
         
         if (!IsProcessing && !IsLoadingAudio)
@@ -1439,6 +1515,36 @@ public partial class MainViewModel : ObservableObject
             Math.Abs(current.Tremolo.Depth - newSettings.Tremolo.Depth) > 0.01)
             return false;
 
+        // Compare bitcrusher settings
+        if (current.Bitcrusher.Enabled != newSettings.Bitcrusher.Enabled ||
+            Math.Abs(current.Bitcrusher.BitDepth - newSettings.Bitcrusher.BitDepth) > 0.1 ||
+            Math.Abs(current.Bitcrusher.Downsample - newSettings.Bitcrusher.Downsample) > 0.1 ||
+            Math.Abs(current.Bitcrusher.Mix - newSettings.Bitcrusher.Mix) > 0.01)
+            return false;
+
+        // Compare vibrato settings
+        if (current.Vibrato.Enabled != newSettings.Vibrato.Enabled ||
+            Math.Abs(current.Vibrato.Rate - newSettings.Vibrato.Rate) > 0.01 ||
+            Math.Abs(current.Vibrato.Depth - newSettings.Vibrato.Depth) > 0.01 ||
+            Math.Abs(current.Vibrato.Mix - newSettings.Vibrato.Mix) > 0.01)
+            return false;
+
+        // Compare saturation settings
+        if (current.Saturation.Enabled != newSettings.Saturation.Enabled ||
+            Math.Abs(current.Saturation.Drive - newSettings.Saturation.Drive) > 0.01 ||
+            Math.Abs(current.Saturation.Tone - newSettings.Saturation.Tone) > 0.01 ||
+            Math.Abs(current.Saturation.Mix - newSettings.Saturation.Mix) > 0.01)
+            return false;
+
+        // Compare gate settings
+        if (current.Gate.Enabled != newSettings.Gate.Enabled ||
+            Math.Abs(current.Gate.Threshold - newSettings.Gate.Threshold) > 0.01 ||
+            Math.Abs(current.Gate.Ratio - newSettings.Gate.Ratio) > 0.1 ||
+            Math.Abs(current.Gate.Attack - newSettings.Gate.Attack) > 0.1 ||
+            Math.Abs(current.Gate.Release - newSettings.Gate.Release) > 1.0 ||
+            Math.Abs(current.Gate.Floor - newSettings.Gate.Floor) > 0.01)
+            return false;
+
         return true;
     }
 
@@ -1519,6 +1625,36 @@ public partial class MainViewModel : ObservableObject
                 Enabled = source.Tremolo.Enabled,
                 Rate = source.Tremolo.Rate,
                 Depth = source.Tremolo.Depth
+            },
+            Bitcrusher = new BitcrusherSettings
+            {
+                Enabled = source.Bitcrusher.Enabled,
+                BitDepth = source.Bitcrusher.BitDepth,
+                Downsample = source.Bitcrusher.Downsample,
+                Mix = source.Bitcrusher.Mix
+            },
+            Vibrato = new VibratoSettings
+            {
+                Enabled = source.Vibrato.Enabled,
+                Rate = source.Vibrato.Rate,
+                Depth = source.Vibrato.Depth,
+                Mix = source.Vibrato.Mix
+            },
+            Saturation = new SaturationSettings
+            {
+                Enabled = source.Saturation.Enabled,
+                Drive = source.Saturation.Drive,
+                Tone = source.Saturation.Tone,
+                Mix = source.Saturation.Mix
+            },
+            Gate = new GateSettings
+            {
+                Enabled = source.Gate.Enabled,
+                Threshold = source.Gate.Threshold,
+                Ratio = source.Gate.Ratio,
+                Attack = source.Gate.Attack,
+                Release = source.Gate.Release,
+                Floor = source.Gate.Floor
             }
         };
     }
