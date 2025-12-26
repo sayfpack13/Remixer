@@ -28,7 +28,8 @@
     <Window.DataContext>
         <vm:MainViewModel x:Name="ViewModel"/>
     </Window.DataContext>
-    <Grid Margin="16">
+    
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -36,9 +37,9 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Modern Header -->
+        <!-- Compact Header -->
         <Border Grid.Row="0" Background="{StaticResource BackgroundElevated}" 
-                Padding="20,16" Margin="0,0,0,16" CornerRadius="12">
+                Padding="24,16" Margin="0,0,0,20" CornerRadius="12">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="12" ShadowDepth="4" Opacity="0.15"/>
             </Border.Effect>
@@ -47,41 +48,40 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="Audio Remixer" Style="{StaticResource Heading1}" Margin="0,0,0,4"/>
-                    <TextBlock Text="{Binding CurrentFile}" Style="{StaticResource CaptionText}" 
-                               Margin="0,0,0,2" TextTrimming="CharacterEllipsis"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Audio Remixer" Style="{StaticResource Heading1}" Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding CurrentFile}" Style="{StaticResource BodyText}" 
+                               Foreground="{StaticResource TextSecondary}"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding AudioFileInfo}" Style="{StaticResource CaptionText}" 
                                Foreground="{StaticResource TextTertiary}"
                                Visibility="{Binding AudioFileInfo, Converter={StaticResource StringToVisibilityConverter}}"
                                TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Load Audio" Command="{Binding LoadAudioCommand}" 
-                            Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="📁 Load Audio" Command="{Binding LoadAudioCommand}" 
+                            Style="{StaticResource PrimaryButton}" Margin="0,0,10,0" Padding="20,12"
                             IsEnabled="{Binding IsLoadingAudio, Converter={StaticResource InvertedBooleanConverter}}"/>
-                    <Button Content="💬 AI Chat" Command="{Binding OpenAIChatCommand}" 
-                            Style="{StaticResource SuccessButton}" Margin="0,0,8,0"
-                            ToolTip="Chat with AI to customize your remix"/>
-                    <Button Content="AI Remix" Command="{Binding AIRemixCommand}" 
-                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                    <Button Content="🤖 AI Remix" Command="{Binding AIRemixCommand}" 
+                            Style="{StaticResource SuccessButton}" Margin="0,0,10,0" Padding="20,12"
                             IsEnabled="{Binding IsProcessing, Converter={StaticResource InvertedBooleanConverter}}"
                             ToolTip="Quick AI remix (one-click)"/>
-                    <Button Content="Settings" Command="{Binding OpenSettingsCommand}" 
-                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                    <Button Content="💬 AI Chat" Command="{Binding OpenAIChatCommand}" 
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" Padding="20,12"
+                            ToolTip="Chat with AI to customize your remix"/>
+                    <Button Content="⚙️ Settings" Command="{Binding OpenSettingsCommand}" 
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" Padding="20,12"
                             IsEnabled="{Binding IsProcessing, Converter={StaticResource InvertedBooleanConverter}}"/>
-                    <Button Content="📋 Logs" Command="{Binding OpenLogFolderCommand}" 
-                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
-                            ToolTip="Open log folder"/>
-                    <Button Content="Export" Command="{Binding ExportAudioCommand}" 
-                            Style="{StaticResource SecondaryButton}"/>
+                    <Button Content="📤 Export" Command="{Binding ExportAudioCommand}" 
+                            Style="{StaticResource SecondaryButton}" Padding="20,12"
+                            IsEnabled="{Binding IsProcessing, Converter={StaticResource InvertedBooleanConverter}}"/>
                 </StackPanel>
             </Grid>
         </Border>
         
-        <!-- Audio Playback Controls -->
+        <!-- Prominent Playback Controls -->
         <Border Grid.Row="1" Background="{StaticResource BackgroundSecondary}" 
-                CornerRadius="8" Padding="16" Margin="0,0,0,16"
+                CornerRadius="12" Padding="24,20" Margin="0,0,0,20"
                 Visibility="{Binding IsAudioLoaded, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="12" ShadowDepth="4" Opacity="0.15"/>
@@ -93,32 +93,38 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
-                <!-- Playback Controls -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                <!-- Playback Buttons -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
                     <Button Content="▶ Play" Command="{Binding PlayCommand}" 
-                            Style="{StaticResource SuccessButton}" Width="100" Margin="0,0,8,0"/>
+                            Style="{StaticResource SuccessButton}" Width="120" Height="48" 
+                            FontSize="15" Margin="0,0,12,0"/>
                     <Button Content="⏸ Pause" Command="{Binding PauseCommand}" 
-                            Style="{StaticResource SecondaryButton}" Width="100" Margin="0,0,8,0"/>
+                            Style="{StaticResource SecondaryButton}" Width="120" Height="48"
+                            FontSize="15" Margin="0,0,12,0"/>
                     <Button Content="⏹ Stop" Command="{Binding StopCommand}" 
-                            Style="{StaticResource DangerButton}" Width="100"/>
+                            Style="{StaticResource DangerButton}" Width="120" Height="48"
+                            FontSize="15"/>
                 </StackPanel>
                 
                 <!-- Position Display -->
-                <Grid Grid.Row="1" Margin="0,0,0,8">
+                <Grid Grid.Row="1" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{Binding CurrentPosition}" 
-                               Style="{StaticResource CaptionText}" VerticalAlignment="Center"/>
+                               Style="{StaticResource BodyText}" FontSize="14" 
+                               VerticalAlignment="Center" Margin="0,0,12,0" 
+                               Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"/>
                     <TextBlock Grid.Column="2" Text="{Binding TotalDuration}" 
-                               Style="{StaticResource CaptionText}" VerticalAlignment="Center"/>
+                               Style="{StaticResource BodyText}" FontSize="14"
+                               VerticalAlignment="Center" Margin="12,0,0,0"
+                               Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"/>
                 </Grid>
                 
                 <!-- Playback Seek Bar Container with Overlay -->
                 <Grid Grid.Row="2">
-                    <!-- Playback Seek Bar -->
                     <Slider Value="{Binding PlaybackPosition}" Maximum="100"
                             Style="{StaticResource ModernSeekBar}"
                             PreviewMouseLeftButtonDown="SeekBar_PreviewMouseLeftButtonDown"
@@ -130,134 +136,139 @@
                             Focusable="True"
                             IsEnabled="{Binding IsApplyingEffects, Converter={StaticResource InvertedBooleanConverter}}"/>
 
-                    <!-- Applying Effects Indicator - Overlay on top of slider -->
+                    <!-- Applying Effects Indicator -->
                     <Border Background="{StaticResource AccentPrimary}"
-                            CornerRadius="10" Padding="12,8" 
+                            CornerRadius="10" Padding="16,10" 
                             VerticalAlignment="Center"
                             HorizontalAlignment="Stretch"
                             Visibility="{Binding IsApplyingEffects, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Panel.ZIndex="10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="⚡ Applying Effects..." Style="{StaticResource BodyText}"
-                                       Foreground="White" FontWeight="SemiBold"/>
+                                       Foreground="White" FontWeight="SemiBold" FontSize="14"/>
                         </StackPanel>
                     </Border>
                 </Grid>
             </Grid>
         </Border>
 
-        <!-- Main Content -->
+        <!-- Main Content Area -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="340"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left Panel - Presets -->
-            <Border Grid.Column="0" Style="{StaticResource ModernBorder}" Margin="0,0,16,0">
+            <!-- Left Panel - Presets & AI Status -->
+            <ScrollViewer Grid.Column="0" Style="{StaticResource ModernScrollViewer}" Margin="0,0,20,0">
                 <StackPanel>
-                    <TextBlock Text="Presets" Style="{StaticResource Heading2}" Margin="0,0,0,12"/>
-                    <ListBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" 
-                             Style="{StaticResource ModernListBox}"
-                             Height="220" Margin="0,0,0,12">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" 
-                                               Foreground="{StaticResource TextPrimary}" FontSize="13"/>
-                                    <TextBlock Text="{Binding Category}" Style="{StaticResource CaptionText}" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding Description}" Style="{StaticResource CaptionText}" 
-                                               TextWrapping="Wrap" Margin="0,2,0,0"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                    <Button Content="Apply Preset" Command="{Binding ApplyPresetCommand}" 
-                            Style="{StaticResource PrimaryButton}" Margin="0,0,0,8"/>
-                    <Button Content="Save Current as Preset" Command="{Binding SavePresetCommand}" 
-                            Style="{StaticResource SuccessButton}" Margin="0,0,0,8"/>
-                    <Button Content="Delete Selected Preset" Command="{Binding DeletePresetCommand}" 
-                            Style="{StaticResource DangerButton}"/>
-                    
-                    <!-- Loading Indicator -->
-                    <Border Background="{StaticResource BackgroundTertiary}" 
-                            CornerRadius="6" Padding="12" Margin="0,12,0,0"
-                            Visibility="{Binding IsLoadingAudio, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⏳" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Loading audio..." Style="{StaticResource BodyText}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Processing Indicator with Progress -->
-                    <Border Background="{StaticResource AccentPrimary}" 
-                            CornerRadius="6" Padding="12" Margin="0,12,0,0"
-                            Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <!-- Presets Section -->
+                    <Border Style="{StaticResource ModernBorder}" Margin="0,0,0,16">
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <TextBlock Text="⏳" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                                    <DataTrigger.EnterActions>
-                                                        <BeginStoryboard>
-                                                            <Storyboard RepeatBehavior="Forever">
-                                                                <DoubleAnimation Storyboard.TargetProperty="(TextBlock.RenderTransform).(RotateTransform.Angle)"
-                                                                                 From="0" To="360" Duration="0:0:1"/>
-                                                            </Storyboard>
-                                                        </BeginStoryboard>
-                                                    </DataTrigger.EnterActions>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform CenterX="8" CenterY="8"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                                <TextBlock Text="{Binding AIStatus}" Style="{StaticResource BodyText}" 
-                                           Foreground="White" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="6" 
-                                        Background="{StaticResource BackgroundTertiary}"
-                                        Foreground="White" BorderThickness="0"
-                                        Visibility="{Binding Progress, Converter={StaticResource ProgressToVisibilityConverter}}"/>
+                            <TextBlock Text="🎵 Presets" Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                            <ListBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" 
+                                     Style="{StaticResource ModernListBox}"
+                                     Height="240" Margin="0,0,0,12">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" 
+                                                       Foreground="{StaticResource TextPrimary}" FontSize="14"/>
+                                            <TextBlock Text="{Binding Category}" Style="{StaticResource CaptionText}" 
+                                                       Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Description}" Style="{StaticResource CaptionText}" 
+                                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button Content="Apply Preset" Command="{Binding ApplyPresetCommand}" 
+                                    Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Padding="16,12"/>
+                            <Button Content="💾 Save Current as Preset" Command="{Binding SavePresetCommand}" 
+                                    Style="{StaticResource SuccessButton}" Margin="0,0,0,8" Padding="16,12"/>
+                            <Button Content="🗑️ Delete Selected" Command="{Binding DeletePresetCommand}" 
+                                    Style="{StaticResource DangerButton}" Padding="16,12"/>
                         </StackPanel>
                     </Border>
                     
-                    <!-- AI Status -->
-                    <Separator Margin="0,20,0,12" Background="{StaticResource BorderColor}"/>
-                    <TextBlock Text="AI Status" Style="{StaticResource Heading2}" Margin="0,0,0,8"/>
-                    <Border Background="{StaticResource BackgroundTertiary}" 
-                            CornerRadius="6" Padding="12" Margin="0,0,0,8">
-                        <TextBlock Text="{Binding AIStatus}" Style="{StaticResource BodyText}" 
-                                   TextWrapping="Wrap"/>
-                    </Border>
-                    <Border Background="{StaticResource BackgroundTertiary}" 
-                            CornerRadius="6" Padding="12"
-                            Visibility="{Binding AIReasoning, Converter={StaticResource StringToVisibilityConverter}}">
-                        <TextBlock Text="{Binding AIReasoning}" Style="{StaticResource CaptionText}" 
-                                   TextWrapping="Wrap"/>
+                    <!-- AI Status Section -->
+                    <Border Style="{StaticResource ModernBorder}">
+                        <StackPanel>
+                            <TextBlock Text="🤖 AI Status" Style="{StaticResource Heading2}" Margin="0,0,0,12"/>
+                            
+                            <!-- Loading Indicator -->
+                            <Border Background="{StaticResource BackgroundTertiary}" 
+                                    CornerRadius="8" Padding="12" Margin="0,0,0,12"
+                                    Visibility="{Binding IsLoadingAudio, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⏳" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Loading audio..." Style="{StaticResource BodyText}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- Processing Indicator -->
+                            <Border Background="{StaticResource AccentPrimary}" 
+                                    CornerRadius="8" Padding="12" Margin="0,0,0,12"
+                                    Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="⏳" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                            <DataTrigger.EnterActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard RepeatBehavior="Forever">
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(TextBlock.RenderTransform).(RotateTransform.Angle)"
+                                                                                         From="0" To="360" Duration="0:0:1"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </DataTrigger.EnterActions>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                            <TextBlock.RenderTransform>
+                                                <RotateTransform CenterX="9" CenterY="9"/>
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding AIStatus}" Style="{StaticResource BodyText}" 
+                                                   Foreground="White" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="8" 
+                                                Background="{StaticResource BackgroundTertiary}"
+                                                Foreground="White" BorderThickness="0"
+                                                Visibility="{Binding Progress, Converter={StaticResource ProgressToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- AI Status Text -->
+                            <Border Background="{StaticResource BackgroundTertiary}" 
+                                    CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                                <TextBlock Text="{Binding AIStatus}" Style="{StaticResource BodyText}" 
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                            
+                            <!-- AI Reasoning -->
+                            <Border Background="{StaticResource BackgroundTertiary}" 
+                                    CornerRadius="8" Padding="12"
+                                    Visibility="{Binding AIReasoning, Converter={StaticResource StringToVisibilityConverter}}">
+                                <TextBlock Text="{Binding AIReasoning}" Style="{StaticResource CaptionText}" 
+                                           TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"/>
+                            </Border>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
-            </Border>
+            </ScrollViewer>
 
-            <!-- Right Panel - Audio Controls -->
+            <!-- Right Panel - Audio Effects -->
             <ScrollViewer Grid.Column="1" Style="{StaticResource ModernScrollViewer}">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -269,80 +280,82 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
-                    <!-- No Audio Loaded Message - spans both columns -->
+                    <!-- No Audio Loaded Message -->
                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                             Background="{StaticResource BackgroundSecondary}"
-                            CornerRadius="6" Padding="16" Margin="0,0,0,16"
+                            CornerRadius="12" Padding="40,60" Margin="0,0,0,20"
                             Visibility="{Binding ShouldShowLoadAudioFirst, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock Text="🎵 Load Audio First" Style="{StaticResource BodyText}"
-                                       FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                            <TextBlock Text="🎵" FontSize="64" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                            <TextBlock Text="Load Audio First" Style="{StaticResource Heading2}"
                                        HorizontalAlignment="Center" Margin="0,0,0,8"/>
                             <TextBlock Text="Click 'Load Audio' to start remixing your music!"
-                                       Style="{StaticResource CaptionText}" Foreground="{StaticResource TextSecondary}"
-                                       HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                                       Style="{StaticResource BodyText}" Foreground="{StaticResource TextSecondary}"
+                                       HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- Tempo & Pitch - spans both columns -->
-                    <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Header="Tempo &amp; Pitch" Style="{StaticResource ModernGroupBox}">
+                    <!-- Core Controls: Tempo, Pitch, Volume -->
+                    <GroupBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+                              Header="🎛️ Core Controls" Style="{StaticResource ModernGroupBox}">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
                         <StackPanel>
-                            <Grid Margin="0,0,0,16">
+                            <Grid Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Tempo" Grid.Column="0" VerticalAlignment="Center" 
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                                 <Slider Grid.Column="1" Minimum="0.5" Maximum="2.0" 
                                         Value="{Binding Settings.Tempo, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="20,0"/>
                                 <TextBlock Text="{Binding Settings.Tempo, StringFormat='{}{0:F2}x'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                             </Grid>
-                            <Grid Margin="0,0,0,16">
+                            <Grid Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Pitch" Grid.Column="0" VerticalAlignment="Center" 
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                                 <Slider Grid.Column="1" Minimum="-12" Maximum="12" 
                                         Value="{Binding Settings.Pitch, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="20,0"/>
                                 <TextBlock Text="{Binding Settings.Pitch, StringFormat='{}{0:F0} st'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                             </Grid>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Volume" Grid.Column="0" VerticalAlignment="Center" 
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                                 <Slider Grid.Column="1" Minimum="0" Maximum="2" 
                                         Value="{Binding Settings.Volume, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource ModernSlider}"
-                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="16,0"/>
+                                        TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="20,0"/>
                                 <TextBlock Text="{Binding Settings.Volume, StringFormat='{}{0:F1}'}" Grid.Column="2" 
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
-                                           Style="{StaticResource BodyText}"/>
+                                           Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
                             </Grid>
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Reverb -->
-                    <GroupBox Grid.Row="2" Grid.Column="0" Header="Reverb" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                    <!-- Spatial Effects: Reverb & Echo -->
+                    <GroupBox Grid.Row="1" Grid.Column="0" Header="🏛️ Reverb" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -407,8 +420,8 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Echo -->
-                    <GroupBox Grid.Row="2" Grid.Column="1" Header="Echo / Delay" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                    <GroupBox Grid.Row="1" Grid.Column="1" Header="🔊 Echo / Delay" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -474,7 +487,8 @@
                     </GroupBox>
 
                     <!-- Filter / EQ -->
-                    <GroupBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Header="Filter / EQ" Style="{StaticResource ModernGroupBox}">
+                    <GroupBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                              Header="🎚️ Filter / EQ" Style="{StaticResource ModernGroupBox}">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -573,8 +587,9 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Tremolo -->
-                    <GroupBox Grid.Row="4" Grid.Column="0" Header="Tremolo" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                    <!-- Modulation Effects Row 1 -->
+                    <GroupBox Grid.Row="3" Grid.Column="0" Header="🌊 Tremolo" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -622,8 +637,8 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Compressor -->
-                    <GroupBox Grid.Row="4" Grid.Column="1" Header="Compressor" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                    <GroupBox Grid.Row="3" Grid.Column="1" Header="📊 Compressor" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -638,7 +653,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid Grid.Row="0" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -654,7 +669,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -670,7 +685,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="2" Margin="0,0,0,16">
+                                <Grid Grid.Row="2" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -686,7 +701,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="3" Margin="0,0,0,16">
+                                <Grid Grid.Row="3" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -722,8 +737,9 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Distortion -->
-                    <GroupBox Grid.Row="5" Grid.Column="0" Header="Distortion" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                    <!-- Modulation Effects Row 2 -->
+                    <GroupBox Grid.Row="4" Grid.Column="0" Header="🎸 Distortion" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -788,8 +804,8 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Chorus -->
-                    <GroupBox Grid.Row="5" Grid.Column="1" Header="Chorus" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                    <GroupBox Grid.Row="4" Grid.Column="1" Header="🎵 Chorus" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -854,8 +870,9 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Flanger -->
-                    <GroupBox Grid.Row="6" Grid.Column="0" Header="Flanger" Style="{StaticResource ModernGroupBox}" Margin="0,0,8,16">
+                    <!-- Modulation Effects Row 3 -->
+                    <GroupBox Grid.Row="5" Grid.Column="0" Header="🌀 Flanger" 
+                              Style="{StaticResource ModernGroupBox}" Margin="0,0,10,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -870,7 +887,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid Grid.Row="0" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -886,7 +903,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -902,7 +919,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="2" Margin="0,0,0,16">
+                                <Grid Grid.Row="2" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -918,7 +935,7 @@
                                                VerticalAlignment="Center" HorizontalAlignment="Right"
                                                Style="{StaticResource BodyText}"/>
                                 </Grid>
-                                <Grid Grid.Row="3" Margin="0,0,0,16">
+                                <Grid Grid.Row="3" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="*"/>
@@ -954,8 +971,8 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Phaser -->
-                    <GroupBox Grid.Row="6" Grid.Column="1" Header="Phaser" Style="{StaticResource ModernGroupBox}" Margin="8,0,0,16">
+                    <GroupBox Grid.Row="5" Grid.Column="1" Header="🌐 Phaser" 
+                              Style="{StaticResource ModernGroupBox}" Margin="10,0,0,16">
                         <GroupBox.Visibility>
                             <Binding Path="IsAudioLoaded" Converter="{StaticResource BooleanToVisibilityConverter}"/>
                         </GroupBox.Visibility>
@@ -1036,34 +1053,21 @@
                             </Grid>
                         </StackPanel>
                     </GroupBox>
-
-                    <!-- AI Indicator - spans both columns -->
-                    <Border Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource AccentPrimary}" Padding="16" Margin="0,0,0,0" CornerRadius="8"
-                            Visibility="{Binding IsAISet, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.2"/>
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock Text="✨ AI Parameters Applied" FontWeight="SemiBold" 
-                                       Foreground="White" FontSize="14" Margin="0,0,0,6"/>
-                            <TextBlock Text="These settings were automatically applied by AI. You can override them manually." 
-                                       Style="{StaticResource CaptionText}" Foreground="#E0E0E0"/>
-                        </StackPanel>
-                    </Border>
                 </Grid>
             </ScrollViewer>
         </Grid>
 
-        <!-- Modern Footer -->
+        <!-- Status Footer -->
         <Border Grid.Row="3" Background="{StaticResource BackgroundElevated}" 
-                Padding="16,12" Margin="0,16,0,0" CornerRadius="8">
+                Padding="20,14" Margin="0,20,0,0" CornerRadius="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="280"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource CaptionText}"
-                           VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource BodyText}"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextSecondary}">
                     <TextBlock.Text>
                         <MultiBinding Converter="{StaticResource StatusTextConverter}">
                             <Binding Path="IsAudioLoaded"/>
@@ -1074,10 +1078,10 @@
                     </TextBlock.Text>
                 </TextBlock>
                 <Border Grid.Column="1" Background="{StaticResource BackgroundTertiary}" 
-                        CornerRadius="3" Height="6" 
+                        CornerRadius="4" Height="8" 
                         Visibility="{Binding Progress, Converter={StaticResource ProgressToVisibilityConverter}}">
                     <ProgressBar Value="{Binding Progress}" Maximum="100" 
-                                 Height="6" Background="Transparent"
+                                 Height="8" Background="Transparent"
                                  Foreground="{StaticResource AccentPrimary}"/>
                 </Border>
             </Grid>

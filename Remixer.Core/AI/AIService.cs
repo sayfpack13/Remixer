@@ -65,27 +65,84 @@ public class AIService
     
     private RemixSuggestion CreateDefaultSuggestion(AudioFeatures features)
     {
-        // Create a randomized default suggestion based on audio features
-        // This ensures variety even when AI API fails
+        // Create an intelligent remix suggestion based on audio features
+        // Uses musical knowledge to create coherent, genre-appropriate combinations
         var random = new Random(); // Use new instance to avoid thread safety issues
         
-        // Randomize which effects to enable (weighted by energy level)
-        bool enableReverb = features.Energy > 0.5 && random.NextDouble() > 0.3;
-        bool enableCompressor = features.Energy > 0.6 && random.NextDouble() > 0.4;
-        bool enableChorus = random.NextDouble() > 0.6;
-        bool enableFlanger = random.NextDouble() > 0.7;
-        bool enablePhaser = random.NextDouble() > 0.7;
-        bool enableDistortion = features.Energy > 0.7 && random.NextDouble() > 0.5;
-        bool enableTremolo = random.NextDouble() > 0.7;
-        bool enableEcho = random.NextDouble() > 0.6;
+        // Determine remix style based on genre and BPM
+        string genre = features.Genre ?? "Unknown";
+        bool isElectronic = genre.Contains("Electronic") || genre.Contains("Dance") || genre.Contains("Techno");
+        bool isHighEnergy = features.Energy > 0.7;
+        bool isFastBPM = features.BPM > 130;
+        bool isSlowBPM = features.BPM < 100;
+        bool isMidEnergy = features.Energy >= 0.4 && features.Energy <= 0.7;
         
-        // Randomize tempo (slight variations)
-        double tempoVariation = (random.NextDouble() - 0.5) * 0.2; // -0.1 to +0.1
-        double baseTempo = features.BPM > 120 ? 1.1 : 1.0;
-        double tempo = Math.Clamp(baseTempo + tempoVariation, 0.8, 1.3);
+        // Intelligent effect selection based on genre and characteristics
+        // High-energy electronic: Compressor + Reverb + Chorus/Flanger
+        // Pop/Rock: Compressor + Reverb + Chorus
+        // Ambient/Chill: Reverb + Echo + Light Chorus
+        // Fast BPM: Compressor + Tremolo for rhythm
+        // Slow BPM: Reverb + Echo for depth
         
-        // Randomize pitch (small variations)
-        double pitch = (random.NextDouble() - 0.5) * 2.0; // -1 to +1 semitones
+        bool enableReverb = true; // Reverb is almost always beneficial
+        bool enableCompressor = isHighEnergy || isFastBPM || isElectronic; // Essential for punchy tracks
+        bool enableChorus = isMidEnergy || isElectronic || random.NextDouble() > 0.4; // Good for width
+        bool enableFlanger = isElectronic && random.NextDouble() > 0.5; // Electronic flavor
+        bool enablePhaser = isElectronic && random.NextDouble() > 0.6; // Psychedelic effect
+        bool enableDistortion = isHighEnergy && (isElectronic || random.NextDouble() > 0.6); // Grit for high energy
+        bool enableTremolo = isFastBPM && random.NextDouble() > 0.5; // Rhythmic variation
+        bool enableEcho = isSlowBPM || !isHighEnergy || random.NextDouble() > 0.5; // Depth for slower tracks
+        bool enableFilter = isElectronic && random.NextDouble() > 0.6; // EQ shaping for electronic
+        
+        // Don't enable too many modulation effects at once (they can conflict)
+        int modulationCount = (enableChorus ? 1 : 0) + (enableFlanger ? 1 : 0) + (enablePhaser ? 1 : 0);
+        if (modulationCount > 2)
+        {
+            // Keep only the most appropriate ones
+            if (modulationCount == 3)
+            {
+                // Prefer Chorus for most genres, Flanger for electronic
+                if (!isElectronic) enablePhaser = false;
+                else enableChorus = false;
+            }
+        }
+        
+        // Intelligent tempo adjustment based on BPM
+        double tempo;
+        if (isFastBPM)
+        {
+            // For fast tracks, slightly slow down for groove (0.95-1.05x)
+            tempo = 0.95 + random.NextDouble() * 0.1;
+        }
+        else if (isSlowBPM)
+        {
+            // For slow tracks, speed up slightly for energy (1.0-1.1x)
+            tempo = 1.0 + random.NextDouble() * 0.1;
+        }
+        else
+        {
+            // Mid-tempo: subtle variation (0.98-1.02x)
+            tempo = 0.98 + random.NextDouble() * 0.04;
+        }
+        tempo = Math.Clamp(tempo, 0.85, 1.15); // Safe range
+        
+        // Intelligent pitch adjustment (subtle, musically appropriate)
+        double pitch;
+        if (isHighEnergy && isFastBPM)
+        {
+            // Slight pitch up for energy (+0.5 to +1.5 semitones)
+            pitch = 0.5 + random.NextDouble() * 1.0;
+        }
+        else if (isSlowBPM && !isHighEnergy)
+        {
+            // Slight pitch down for warmth (-0.5 to -1.0 semitones)
+            pitch = -1.0 + random.NextDouble() * 0.5;
+        }
+        else
+        {
+            // Neutral with slight variation (-0.5 to +0.5 semitones)
+            pitch = (random.NextDouble() - 0.5) * 1.0;
+        }
         pitch = Math.Clamp(pitch, -2.0, 2.0);
         
         var settings = new AudioSettings
